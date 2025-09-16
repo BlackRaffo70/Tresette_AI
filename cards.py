@@ -7,11 +7,11 @@ from typing import List
 SUITS = ["D", "C", "S", "B"]
 
 # Ranks per visualizzazione (dal più basso al più alto a fini estetici)
-RANKS = ["4", "5", "6", "7", "F", "C", "R", "A", "2", "3"]
+RANKS = ["4", "5", "6", "7", "8", "9", "10", "A", "2", "3"]
 
 # Ordine di forza del Tresette (dal più forte al più debole):
 # 3 > 2 > A > R > C > F > 7 > 6 > 5 > 4
-STRENGTH_DESC = ["3", "2", "A", "R", "C", "F", "7", "6", "5", "4"]
+STRENGTH_DESC = ["3", "2", "A", "10", "9", "8", "7", "6", "5", "4"]
 
 # Mappiamo ogni rank a un intero di forza (9=massima, 0=minima)
 RANK_TO_STRENGTH = {r: 9 - i for i, r in enumerate(STRENGTH_DESC)}
@@ -23,9 +23,9 @@ THIRDS_BY_RANK = {
     "A": 3,
     "2": 1,
     "3": 1,
-    "R": 1,
-    "C": 1,
-    "F": 1,
+    "10": 1,
+    "9": 1,
+    "8": 1,
     "7": 0,
     "6": 0,
     "5": 0,

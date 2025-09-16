@@ -67,14 +67,3 @@ def encode_state(state: GameState, seat: int, void_flags):
     mask = torch.tensor(legal_action_mask(state), dtype=torch.float32).unsqueeze(0)
 
     return features, mask
-
-# One-hot segnali: 4 giocatori × 4 semi × 3 segnali
-signals_tensor = torch.zeros(4, 4, 3)
-for seat, sig in state.signals.items():
-    seme = sig["suit"]
-    if sig["signal"] == "volo":
-        signals_tensor[seat, seme, 0] = 1
-    elif sig["signal"] == "striscio":
-        signals_tensor[seat, seme, 1] = 1
-    elif sig["signal"] == "busso":
-        signals_tensor[seat, seme, 2] = 1

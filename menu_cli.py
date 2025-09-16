@@ -3,12 +3,12 @@
 # ================================
 from __future__ import annotations
 import random
-from cards import id_to_card
+from cards import id_to_card, SUITS
 from game4p import deal, step, legal_action_mask
 
 def print_hand(seat: int, hand: list[int]):
-    """Stampa la mano di un giocatore (usato per l'umano)."""
-    print(f"Tua mano (Seat {seat}):")
+    """Stampa la mano di un giocatore (solo umano)."""
+    print(f"\nTua mano (Seat {seat}):")
     for idx, cid in enumerate(hand):
         print(f"  {idx}: {id_to_card(cid)}")
 
@@ -17,36 +17,40 @@ def play_human_vs_random(seed: int = 0, human_seat: int = 0):
     st = deal(rng=rng, leader=0)
 
     print("=== Inizio mano di Tresette (4 giocatori) ===")
-    print(f"Tu sei il Seat {human_seat}. Il tuo compagno è Seat {(human_seat+2)%4}.\n")
+    print(f"Tu sei Seat {human_seat}. Il tuo compagno è Seat {(human_seat+2)%4}.\n")
 
     while True:
         current = st.current_player
         mask = legal_action_mask(st)
 
+        # Turno umano
         if current == human_seat:
-            # Turno umano
             print_hand(human_seat, st.hands[human_seat])
-            # Filtra le carte legali
             legali = [cid for cid in st.hands[human_seat] if mask[cid] == 1]
             print("\nCarte legali:")
             for idx, cid in enumerate(legali):
                 print(f"  {idx}: {id_to_card(cid)}")
-            # Input utente
             scelta = int(input("Scegli l'indice della carta da giocare: "))
             cid = legali[scelta]
+
+        # Turno AI random
         else:
-            # Turno AI random
             legali = [cid for cid in st.hands[current] if mask[cid] == 1]
             cid = rng.choice(legali)
 
-        # Esegui la mossa
-        prev_player = current
+        prev_player = st.current_player
         st, rew, done, info = step(st, cid)
-        print(f"Seat {prev_player} gioca {id_to_card(cid)}")
+        print(f"\nSeat {prev_player} gioca {id_to_card(cid)}")
 
-        # Se la presa è stata completata
+        # Se c'è stato un segnale (leader del trick)
+        if "signal" in info:
+            sig = info["signal"]
+            seme_str = SUITS[sig["suit"]]
+            print(f"  >>> Segnale Seat {sig['seat']}: {sig['signal'].upper()} su seme {seme_str}")
+
+        # Se la presa si è appena chiusa
         if len(st.trick.plays) == 0:
-            print(f"  -> Presa vinta dal seat {st.current_player}\n")
+            print(f"  -> Presa vinta dal Seat {st.current_player}\n")
 
         if done:
             print("=== Mano terminata ===")
@@ -68,10 +72,15 @@ def play_full_random(seed: int = 0):
 
         prev_player = st.current_player
         st, rew, done, info = step(st, cid)
-        print(f"Seat {prev_player} gioca {id_to_card(cid)}")
+        print(f"\nSeat {prev_player} gioca {id_to_card(cid)}")
+
+        if "signal" in info:
+            sig = info["signal"]
+            seme_str = SUITS[sig["suit"]]
+            print(f"  >>> Segnale Seat {sig['seat']}: {sig['signal'].upper()} su seme {seme_str}")
 
         if len(st.trick.plays) == 0:
-            print(f"  -> Presa vinta dal seat {st.current_player}\n")
+            print(f"  -> Presa vinta dal Seat {st.current_player}\n")
 
         if done:
             print("=== Mano terminata ===")
@@ -87,7 +96,8 @@ def main_menu():
         scelta = input("Seleziona opzione: ")
 
         if scelta == "1":
-            play_human_vs_random()
+            seat = int(input("Scegli il tuo seat (0-3): "))
+            play_human_vs_random(human_seat=seat)
         elif scelta == "2":
             play_full_random()
         elif scelta == "0":

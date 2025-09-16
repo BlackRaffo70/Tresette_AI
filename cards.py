@@ -63,4 +63,4 @@ def card_to_id(card: Card) -> int:
 
 def full_deck() -> List[int]:
     """Ritorna il mazzo completo (lista di id 0..39)."""
-    return [s * 10 + r for s in range(4) for r in range(10)]
+    return [s * 10 + r for s in range(4) for r in range(len(RANKS))]

@@ -68,10 +68,11 @@ def step(state: GameState, card_id: int) -> Tuple[GameState, Dict[int,int], bool
         seme = played_card.suit
         rest = [c for c in ns.hands[p] if id_to_card(c).suit == seme]
 
-        if not rest:  # ultima carta di quel seme
-            signal = "volo"
-        elif played_card.rank in ["2", "3"]:
+        # logica aggiornata
+        if any(id_to_card(c).rank in ["2", "3"] for c in rest):
             signal = "busso"
+        elif not rest:
+            signal = "volo"
         else:
             signal = "striscio"
 

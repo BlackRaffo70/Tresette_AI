@@ -17,7 +17,15 @@ def update_void_flags(void_flags, trick):
     return void_flags
 
 def encode_state(state: GameState, seat: int, void_flags):
-    """Trasforma lo stato in un vettore di feature PyTorch + mask delle azioni legali."""
+    """
+    Trasforma lo stato in un vettore di feature PyTorch + mask delle azioni legali.
+    Feature:
+      - mano (one-hot 40)
+      - carte già giocate e catturate (40)
+      - void flags (4x4)
+      - seat_id (4) e compagno (4)
+      - segnali (4x4x3) flatten
+    """
     # One-hot della mano (40)
     hand_vec = torch.zeros(40)
     for c in state.hands[seat]:
@@ -25,10 +33,8 @@ def encode_state(state: GameState, seat: int, void_flags):
 
     # Carte già uscite (40)
     played_vec = torch.zeros(40)
-    # carte giocate nei trick
     for _, cid in state.trick.plays:
         played_vec[cid] = 1.0
-    # carte catturate
     for team_cards in state.captures_team.values():
         for c in team_cards:
             played_vec[c] = 1.0
@@ -37,11 +43,24 @@ def encode_state(state: GameState, seat: int, void_flags):
     voids = torch.tensor(void_flags, dtype=torch.float32).flatten()
 
     # Seat e compagno
-    seat_id = torch.zeros(4); seat_id[seat] = 1.0
-    ally_pos = torch.zeros(4); ally_pos[(seat+2) % 4] = 1.0
+    seat_id = torch.zeros(4)
+    seat_id[seat] = 1.0
+    ally_pos = torch.zeros(4)
+    ally_pos[(seat + 2) % 4] = 1.0
+
+    # One-hot segnali: 4 giocatori × 4 semi × 3 segnali
+    signals_tensor = torch.zeros(4, 4, 3)
+    for s, sig in state.signals.items():
+        seme = sig["suit"]
+        if sig["signal"] == "volo":
+            signals_tensor[s, seme, 0] = 1
+        elif sig["signal"] == "striscio":
+            signals_tensor[s, seme, 1] = 1
+        elif sig["signal"] == "busso":
+            signals_tensor[s, seme, 2] = 1
 
     # Concatenazione feature
-    features = torch.cat([hand_vec, played_vec, voids, seat_id, ally_pos])
+    features = torch.cat([hand_vec, played_vec, voids, seat_id, ally_pos, signals_tensor.flatten()])
     features = features.unsqueeze(0)  # shape [1, dim]
 
     # Mask azioni legali

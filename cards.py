@@ -9,7 +9,7 @@ SUITS = ["D", "C", "S", "B"] # ->SEME
 # Ranks per visualizzazione (dal più basso al più alto a fini estetici)
 RANKS = ["4", "5", "6", "7", "8", "9", "10", "A", "2", "3"]
 
-# Ordine di forza del Tresette (dal più forte al più debole):
+# Ordine di forza del Tressette (dal più forte al più debole):
 # 3 > 2 > A > R > C > F > 7 > 6 > 5 > 4
 STRENGTH_DESC = ["3", "2", "A", "10", "9", "8", "7", "6", "5", "4"]
 
@@ -40,7 +40,7 @@ class Card:
 
     @property
     def strength(self) -> int:
-        """Valore di forza del rank secondo l'ordine del Tresette."""
+        """Valore di forza del rank secondo l'ordine del Tressette."""
         return RANK_TO_STRENGTH[self.rank]
 
     @property

@@ -92,5 +92,13 @@ python - <<EOF
 import torch
 print("CUDA disponibile:", torch.cuda.is_available())
 EOF
+```
+---
+## 🎮 Giocare contro l’AI
 
+Dopo aver completato il training, è possibile sfidare l’agente tramite l’interfaccia a riga di comando:
+
+```bash
+python menu_cli.py
+```
 

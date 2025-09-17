@@ -101,4 +101,13 @@ Dopo aver completato il training, è possibile sfidare l’agente tramite l’in
 ```bash
 python menu_cli.py
 ```
+## 📦 Requisiti
 
+Il progetto richiede **Python 3.10+** e le seguenti librerie principali:
+
+```txt
+torch>=2.0.0
+numpy>=1.23.0
+matplotlib>=3.7.0
+tqdm>=4.65.0
+gym>=0.26.0

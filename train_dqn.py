@@ -163,7 +163,15 @@ def train(resume_from: str | None = None):
                     r_shape = r_team_shape if my_team == 0 else -r_team_shape
                     total_tricks += 1
 
-            r_final = float(rewards[TEAM_OF_SEAT[seat]]) if done else 0.0
+            # Reward finale: differenza di punteggio tra i team (solo a fine mano)
+            if done:
+                my_team = TEAM_OF_SEAT[seat]
+                other_team = 1 - my_team
+                r_final = float(rewards[my_team]) - float(rewards[other_team])
+            else:
+                r_final = 0.0
+
+            # Reward totale = shaping intermedio + finale
             r = r_shape + r_final
 
             x_next, mask_next = encode_state(next_state, seat, void_flags)

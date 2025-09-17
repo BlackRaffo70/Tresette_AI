@@ -20,7 +20,7 @@ class GameState: #rappresenta la mano attuale
     tricks_played: int
     signals: Dict[int, Dict]  # seat -> {suit, signal}
 
-    def clone(self) -> "GameState": #crea uno stato clone indipendente da quello originale
+    def clone(self) -> GameState: #crea uno stato clone indipendente da quello originale
         """Crea una copia indipendente dello stato."""
         return GameState(
             hands=[h.copy() for h in self.hands],

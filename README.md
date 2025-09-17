@@ -31,6 +31,23 @@ La nostra attività progettuale per il corso di Fondamenti di Intelligenza Artif
 - **Training loop** → simulazione di migliaia di partite per ottimizzare la policy.  
 
 ---
+## 🏋️‍♂️ Training
+
+Il processo di training dell’agente segue due fasi principali:  
+
+1. **Fase casuale** → l’agente gioca utilizzando mosse casuali, in modo da esplorare lo spazio delle possibilità e raccogliere esperienza.  
+2. **Fase euristica** → successivamente, viene introdotta una semplice euristica che guida le scelte dell’agente (es. preferire mosse con carte forti o evitare sprechi), accelerando l’apprendimento prima che intervenga l’ottimizzazione tramite **Deep Q-Learning**.  
+
+Durante il training:  
+- Vengono salvati **checkpoint periodici** del modello, per poter riprendere l’allenamento senza perdere i progressi.  
+- Se disponibile, viene utilizzata la **GPU** tramite **PyTorch** per velocizzare il processo di apprendimento.  
+
+Per avviare il training:  
+```bash
+python train_dqn.py
+```
+ I parametri di training (es. numero di episodi, learning rate, epsilon decay, frequenza dei checkpoint) possono essere modificati direttamente nel file train_dqn.py.
+---
 
 ## 📂 Struttura del progetto
 
@@ -50,3 +67,29 @@ Tresette_AI/
 │── train_dqn.py        # Script di training con Deep Q-Learning
 │
 └── README.md           # Documentazione del progetto
+```
+---
+## 🚀 Installazione
+
+Per installare ed eseguire il progetto:
+
+```bash
+# 1. Clona la repository
+git clone https://github.com/tuo-username/Tresette_AI.git
+cd Tresette_AI
+
+# 2. Crea e attiva un ambiente virtuale
+python -m venv .venv
+source .venv/bin/activate   # Mac/Linux
+.venv\Scripts\activate      # Windows
+
+# 3. Installa le dipendenze
+pip install -r requirements.txt
+
+# 4. (Opzionale) Verifica il supporto GPU con PyTorch
+python - <<EOF
+import torch
+print("CUDA disponibile:", torch.cuda.is_available())
+EOF
+
+

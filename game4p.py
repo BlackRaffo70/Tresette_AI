@@ -10,7 +10,7 @@ from cards import full_deck, id_to_card
 from rules import Trick, legal_actions, score_team_from_captures, TEAM_OF_SEAT
 
 @dataclass
-class GameState:
+class GameState: #rappresenta la mano attuale
     """Stato di una mano a 4 giocatori (2 coppie)."""
     hands: List[List[int]]
     current_player: int
@@ -20,7 +20,7 @@ class GameState:
     tricks_played: int
     signals: Dict[int, Dict]  # seat -> {suit, signal}
 
-    def clone(self) -> "GameState":
+    def clone(self) -> "GameState": #crea uno stato clone indipendente da quello originale
         """Crea una copia indipendente dello stato."""
         return GameState(
             hands=[h.copy() for h in self.hands],
@@ -55,7 +55,7 @@ def step(state: GameState, card_id: int) -> Tuple[GameState, Dict[int,int], bool
     la = legal_actions(state.hands[p], state.trick)
     assert card_id in la, "Mossa illegale: devi seguire il seme se puoi"
 
-    ns = state.clone()
+    ns = state.clone() #Ns-> State -> Gamestate -> mano di un giocatore
     ns.hands[p].remove(card_id)
     ns.trick.plays.append((p, card_id))
 

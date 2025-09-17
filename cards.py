@@ -4,7 +4,7 @@ from typing import List
 
 # Semi (italiani): 0=Denari (D), 1=Coppe (C), 2=Spade (S), 3=Bastoni (B)
 # Nota: le sigle D/C/S/B sono solo per stampa compatta.
-SUITS = ["D", "C", "S", "B"]
+SUITS = ["D", "C", "S", "B"] # ->SEME
 
 # Ranks per visualizzazione (dal più basso al più alto a fini estetici)
 RANKS = ["4", "5", "6", "7", "8", "9", "10", "A", "2", "3"]
@@ -35,7 +35,7 @@ THIRDS_BY_RANK = {
 @dataclass(frozen=True)
 class Card:
     """Rappresenta una carta del mazzo italiano (40 carte)."""
-    suit: int  # 0..3
+    suit: int  # 0..3 ->SEME
     rank: str  # una tra RANKS
 
     @property

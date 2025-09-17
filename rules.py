@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import List, Tuple
 from dataclasses import dataclass
 
-from cards import Card, id_to_card
+from cards import id_to_card
 
 # Mappatura dei posti (seats) nelle squadre:
 # team 0 = seats 0 e 2 ; team 1 = seats 1 e 3

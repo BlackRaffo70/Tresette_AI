@@ -83,8 +83,16 @@ def play_full_random(seed: int = 0):
             print(f"  -> Presa vinta dal Seat {st.current_player}\n")
 
         if done:
-            print("=== Mano terminata ===")
-            print("Punteggio finale:", info["points"])
+            print("Team 0 (seats 0 e 2):", info["points"][0], "punti")
+            print("Team 1 (seats 1 e 3):", info["points"][1], "punti")
+
+            if info["points"][0] > info["points"][1]:
+                print(">>> VINCITORE: Team 0 (seats 0 e 2) <<<")
+            elif info["points"][1] > info["points"][0]:
+                print(">>> VINCITORE: Team 1 (seats 1 e 3) <<<")
+            else:
+                print(">>> PAREGGIO! <<<")
+
             break
 
 def main_menu():

@@ -82,7 +82,7 @@ def step(state: GameState, card_id: int) -> Tuple[GameState, Dict[int,int], bool
     # Se la presa non è ancora completa
     if len(ns.trick.plays) < 4:
         ns.current_player = (p + 1) % 4
-        return ns, rewards, False, info
+        return ns, rewards, False, info #Se non hanno giocato tutti la carte ritorna False che nel menù ci darà break
 
     # Altrimenti la presa è completa → determina vincitore
     winner = ns.trick.winner()

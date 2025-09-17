@@ -17,7 +17,7 @@ La nostra attività progettuale per il corso di Fondamenti di Intelligenza Artif
 ## 🃏 Regole implementate
 
 - Gestione del **mazzo** e distribuzione delle carte.  
-- Turni di gioco per ** 4 giocatori** attraverso lista di mosse legali.  
+- Turni di gioco per **4 giocatori** attraverso lista di mosse legali.  
 - Calcolo delle **prese** e dei **punteggi** secondo le regole del Tresette. -> 1/3 per le figure , 1 per l'asso
 - Definizione delle **condizioni di vittoria**.  
 

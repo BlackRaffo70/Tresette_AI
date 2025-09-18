@@ -94,6 +94,43 @@ def epsilon(step: int) -> float:
     ratio = min(1.0, step / EPS_DECAY_STEPS)
     return EPS_END + (EPS_START - EPS_END) * math.exp(-3.0 * ratio)
 
+
+from cards import id_to_card
+from game4p import GameState
+
+def euristica(state: GameState, legal_idx: list[int]) -> int:
+    """
+    Euristica potenziata:
+      - Se posso seguire il seme, evito di sprecare Assi quando 2 o 3 non sono usciti.
+      - Altrimenti gioco la carta più debole dello stesso seme.
+      - Se non posso seguire, scarto la più debole in assoluto.
+    """
+    carte_uscite = set()
+    for _, cid in state.trick.plays:
+        carte_uscite.add(cid)
+    for team_cards in state.captures_team.values():
+        carte_uscite.update(team_cards)
+
+    if not state.trick.plays:  # Trick vuoto → apro con carta più debole
+        return min(legal_idx, key=lambda c: id_to_card(c).strength)
+
+    lead_suit = id_to_card(state.trick.plays[0][1]).suit
+    same_suit = [cid for cid in legal_idx if id_to_card(cid).suit == lead_suit]
+
+    if same_suit:
+        # Evita Asso se 2 o 3 non usciti
+        for cid in same_suit:
+            card = id_to_card(cid)
+            if card.rank == "A":
+                due = any(id_to_card(c).rank == "2" and id_to_card(c).suit == lead_suit for c in carte_uscite)
+                tre = any(id_to_card(c).rank == "3" and id_to_card(c).suit == lead_suit for c in carte_uscite)
+                if not (due and tre):
+                    other = [c for c in same_suit if id_to_card(c).rank != "A"]
+                    if other:
+                        return min(other, key=lambda c: id_to_card(c).strength)
+        return min(same_suit, key=lambda c: id_to_card(c).strength)
+    else:
+        return min(legal_idx, key=lambda c: id_to_card(c).strength)
 # ================================
 # Training
 # ================================
@@ -141,14 +178,21 @@ def train(resume_from: str | None = None):
             x, mask = encode_state(state, seat, void_flags)
             eps = epsilon(opt_steps)
 
-            # epsilon-greedy
-            if random.random() < eps:
-                legal_idx = torch.nonzero(mask[0]).view(-1).tolist()
+            legal_idx = torch.nonzero(mask[0]).view(-1).tolist()
+
+            if ep < 5000:  # Fase 1: random puro
                 action = random.choice(legal_idx)
-            else:
-                with torch.no_grad():
-                    q = policy(x, mask)
-                    action = int(q.argmax(dim=1).item())
+
+            elif ep < 20000:  # Fase 2: euristica
+                action = euristica(state, legal_idx)
+
+            else:  # Fase 3: policy DQN con epsilon-greedy
+                if random.random() < eps:
+                    action = random.choice(legal_idx)
+                else:
+                    with torch.no_grad():
+                        q = policy(x, mask)
+                        action = int(q.argmax(dim=1).item())
 
             # update void flags prima dello step
             update_void_flags(void_flags, state, seat, action)

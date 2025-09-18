@@ -21,23 +21,23 @@ from obs.encoder import encode_state, update_void_flags
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ================================
-# Config
+# Config ottimizzata per L40S
 # ================================
 SEED = 42
 random.seed(SEED)
 torch.manual_seed(SEED)
 
-EPISODES = 50_000
+EPISODES = 2_000_000       # molto più alto, la L40S lo regge
 GAMMA = 0.99
-LR = 1e-3
-BATCH_SIZE = 512
-REPLAY_CAP = 200_000
-TARGET_SYNC = 2_000
+LR = 1e-4                  # più basso, training più stabile
+BATCH_SIZE = 2048          # sfrutta la VRAM della L40S
+REPLAY_CAP = 2_000_000     # buffer molto grande
+TARGET_SYNC = 10_000       # aggiorna meno spesso, più stabile
 EPS_START = 1.0
-EPS_END = 0.05
-EPS_DECAY_STEPS = 200_000
-PRINT_EVERY = 500
-CHECKPOINT_EVERY = 10_000
+EPS_END = 0.01             # meno esplorazione alla fine
+EPS_DECAY_STEPS = 1_000_000
+PRINT_EVERY = 1000
+CHECKPOINT_EVERY = 50_000  # salva meno spesso perché episodi tanti
 
 TRICK_SHAPING_SCALE = 1.0 / 3.0
 
@@ -143,6 +143,7 @@ def train(resume_from: str | None = None):
 
     opt = optim.Adam(policy.parameters(), lr=LR)
     rb = Replay(REPLAY_CAP)
+    scaler = torch.cuda.amp.GradScaler()
     opt_steps = 0
     start_ep = 1
 
@@ -231,15 +232,19 @@ def train(resume_from: str | None = None):
             # Ottimizzazione DQN
             if len(rb) >= BATCH_SIZE:
                 s,a,r_b,s2,d,m2 = rb.sample(BATCH_SIZE)
-                q = policy(s).gather(1, a)
-                with torch.no_grad():
-                    q2 = target(s2, m2).max(dim=1, keepdim=True)[0]
-                    y = r_b + (1.0 - d) * GAMMA * q2
-                loss = F.mse_loss(q, y)
+                with torch.cuda.amp.autocast():
+                    q = policy(s).gather(1, a)
+                    with torch.no_grad():
+                        q2 = target(s2, m2).max(dim=1, keepdim=True)[0]
+                        y = r_b + (1.0 - d) * GAMMA * q2
+                    loss = F.mse_loss(q, y)
+
                 opt.zero_grad()
-                loss.backward()
+                scaler.scale(loss).backward()
+                scaler.unscale_(opt)
                 nn.utils.clip_grad_norm_(policy.parameters(), 1.0)
-                opt.step()
+                scaler.step(opt)
+                scaler.update()
                 opt_steps += 1
                 if opt_steps % TARGET_SYNC == 0:
                     target.load_state_dict(policy.state_dict())

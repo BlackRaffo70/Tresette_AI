@@ -170,9 +170,6 @@ def train(resume_from: str | None = None):
         done = False
 
         while not done:
-            # Logga il punteggio della mano (differenza tra team)
-            my_team_score = rewards[0] - rewards[1]
-            reward_log.append(my_team_score)
 
             seat = state.current_player
             x, mask = encode_state(state, seat, void_flags)
@@ -199,6 +196,10 @@ def train(resume_from: str | None = None):
 
             prev_captures = {0:list(state.captures_team[0]),1:list(state.captures_team[1])}
             next_state, rewards, done, info = step(state, action)
+
+            # Logga il punteggio della mano (differenza tra team)
+            my_team_score = rewards[0] - rewards[1]
+            reward_log.append(my_team_score)
 
             # Reward shaping: terzi catturati
             trick_closed = (len(next_state.trick.plays) == 0) and (state.trick.leader != next_state.trick.leader)

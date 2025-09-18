@@ -139,6 +139,7 @@ def train(resume_from: str | None = None):
     policy = DQNNet(in_dim).to(DEVICE)
     target = DQNNet(in_dim).to(DEVICE)
     target.load_state_dict(policy.state_dict())
+    reward_history = []
     target.eval()
 
     opt = optim.Adam(policy.parameters(), lr=LR)
@@ -219,6 +220,9 @@ def train(resume_from: str | None = None):
                 my_team = TEAM_OF_SEAT[seat]
                 other_team = 1 - my_team
                 r_final = float(rewards[my_team]) - float(rewards[other_team])
+                reward_history.append(r_final)  # log reward finale
+                if len(reward_history) > 1000:  # tieni solo ultimi 1000 episodi
+                    reward_history.pop(0)
             else:
                 r_final = 0.0
 
@@ -252,12 +256,9 @@ def train(resume_from: str | None = None):
         total_hands += 1
 
         if ep % PRINT_EVERY == 0:
-            avg_reward = sum(reward_log) / len(reward_log) if reward_log else 0
+            avg_reward = sum(reward_history) / len(reward_history) if reward_history else 0
             print(f"[ep {ep}] replay={len(rb)} opt_steps={opt_steps} eps={epsilon(opt_steps):.3f} "
-                  f"hands={total_hands} tricks={total_tricks} avg_score={avg_reward:.2f}")
-            reward_log.clear()
-
-            print(f"[ep {ep}] replay={len(rb)} opt_steps={opt_steps} eps={epsilon(opt_steps):.3f} hands={total_hands} tricks={total_tricks}")
+                  f"hands={total_hands} tricks={total_tricks} avg_reward={avg_reward:.2f}")
 
         # Checkpoint automatico
         if ep % CHECKPOINT_EVERY == 0:

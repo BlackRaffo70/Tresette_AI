@@ -129,9 +129,14 @@ def train(resume_from: str | None = None):
     for ep in range(start_ep, EPISODES + 1):
         state = deal(rng=random.Random(SEED + ep), leader=ep % 4)
         void_flags = [[0]*4 for _ in range(4)]
+        reward_log = []
         done = False
 
         while not done:
+            # Logga il punteggio della mano (differenza tra team)
+            my_team_score = rewards[0] - rewards[1]
+            reward_log.append(my_team_score)
+
             seat = state.current_player
             x, mask = encode_state(state, seat, void_flags)
             eps = epsilon(opt_steps)
@@ -197,6 +202,11 @@ def train(resume_from: str | None = None):
         total_hands += 1
 
         if ep % PRINT_EVERY == 0:
+            avg_reward = sum(reward_log) / len(reward_log) if reward_log else 0
+            print(f"[ep {ep}] replay={len(rb)} opt_steps={opt_steps} eps={epsilon(opt_steps):.3f} "
+                  f"hands={total_hands} tricks={total_tricks} avg_score={avg_reward:.2f}")
+            reward_log.clear()
+
             print(f"[ep {ep}] replay={len(rb)} opt_steps={opt_steps} eps={epsilon(opt_steps):.3f} hands={total_hands} tricks={total_tricks}")
 
         # Checkpoint automatico

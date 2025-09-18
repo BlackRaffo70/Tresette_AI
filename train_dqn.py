@@ -37,7 +37,7 @@ EPS_START = 1.0
 EPS_END = 0.01             # meno esplorazione alla fine
 EPS_DECAY_STEPS = 1_000_000
 PRINT_EVERY = 1000
-CHECKPOINT_EVERY = 50_000  # salva meno spesso perché episodi tanti
+CHECKPOINT_EVERY = 10_000  # salva meno spesso perché episodi tanti
 
 TRICK_SHAPING_SCALE = 1.0 / 3.0
 
@@ -262,8 +262,8 @@ def train(resume_from: str | None = None):
 
         # Checkpoint automatico
         if ep % CHECKPOINT_EVERY == 0:
-            ckpt_file = f"dqn_tresette_checkpoint_ep{ep}.pt"
-            rb_file = f"dqn_tresette_checkpoint_ep{ep}.pkl"
+            ckpt_file = f"dqn_tressette_checkpoint_ep{ep}.pt"
+            rb_file = f"dqn_tressette_checkpoint_ep{ep}.pkl"
             torch.save({
                 "model": policy.state_dict(),
                 "target": target.state_dict(),
@@ -279,8 +279,8 @@ def train(resume_from: str | None = None):
     torch.save({
         "model": policy.state_dict(),
         "config": {"in_dim": in_dim, "hidden": 256}
-    }, "dqn_tresette_shared.pt")
-    print("Salvato modello finale: dqn_tresette_shared.pt")
+    }, "dqn_tressette_shared.pt")
+    print("Salvato modello finale: dqn_tressette_shared.pt")
 
 # ================================
 # Entrypoint

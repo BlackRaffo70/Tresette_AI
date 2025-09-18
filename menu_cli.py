@@ -16,7 +16,7 @@ def play_human_vs_random(seed: int = 0, human_seat: int = 0):
     rng = random.Random(seed)
     st = deal(rng=rng, leader=0)
 
-    print("=== Inizio mano di Tresette (4 giocatori) ===")
+    print("=== Inizio mano di Tressette (4 giocatori) ===")
     print(f"Tu sei Seat {human_seat}. Il tuo compagno è Seat {(human_seat+2)%4}.\n")
 
     while True:
@@ -97,7 +97,7 @@ def play_full_random(seed: int = 0):
 
 def main_menu():
     while True:
-        print("\n=== Menu Tresette 4P ===")
+        print("\n=== Menu Tressette 4P ===")
         print("1) Gioca una mano (tu vs 3 AI random)")
         print("2) Simula una mano (4 AI random)")
         print("0) Esci")

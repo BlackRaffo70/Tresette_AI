@@ -29,20 +29,19 @@ random.seed(SEED)
 torch.manual_seed(SEED)
 
 
-###PARAMETRI PROVVISORI PER CPU
-EPISODES = 100       # molto più alto, la L40S lo regge
-GAMMA = 0.99
-LR = 1e-4                  # più basso, training più stabile
-BATCH_SIZE = 2048          # sfrutta la VRAM della L40S
-REPLAY_CAP = 2_000_000     # buffer molto grande
-TARGET_SYNC = 10_000       # aggiorna meno spesso, più stabile
+###PARAMETRI PROVVISORI PER CPU Macbook Air M3 512/16
+EPISODES = 5000            # abbastanza per vedere un trend iniziale
+GAMMA = 0.99               # fattore di sconto
+LR = 5e-4                   # learning rate leggermente più alto per aggiornamenti più rapidi
+BATCH_SIZE = 64             # batch più piccolo, meno RAM richiesta
+REPLAY_CAP = 20_000         # buffer medio
+TARGET_SYNC = 500           # aggiorni target network abbastanza spesso
 EPS_START = 1.0
-EPS_END = 0.01             # meno esplorazione alla fine
-EPS_DECAY_STEPS = 1_000_000
-PRINT_EVERY = 10
-CHECKPOINT_EVERY = 10  # salva meno spesso perché episodi tanti
-
-TRICK_SHAPING_SCALE = 1.0 / 3.0
+EPS_END = 0.05              # epsilon finale leggermente più alto
+EPS_DECAY_STEPS = 1500      # epsilon decresce velocemente, così warm-up dura poco
+PRINT_EVERY = 200           # stampa ogni 200 episodi
+CHECKPOINT_EVERY = 500      # salva checkpoint ogni 500 episodi
+TRICK_SHAPING_SCALE = 1.0/3.0  # reward shaping moderato, per non sovrastimare i trick
 
 # ================================
 # DQN
@@ -182,10 +181,13 @@ def train(resume_from: str | None = None):
 
             legal_idx = torch.nonzero(mask[0]).view(-1).tolist()
 
-            if ep < 5000:  # Fase 1: random puro
-                action = random.choice(legal_idx)
+            if ep < 500:  # Warm-up misto: euristica + casuale
+                if random.random() < 0.7:  # 70% euristica
+                    action = euristica(state, legal_idx)
+                else:  # 30% casuale
+                    action = random.choice(legal_idx)
 
-            elif ep < 20000:  # Fase 2: euristica
+            elif ep < 3000:  # Fase 2: euristica pura
                 action = euristica(state, legal_idx)
 
             else:  # Fase 3: policy DQN con epsilon-greedy
@@ -217,6 +219,8 @@ def train(resume_from: str | None = None):
                     my_team = TEAM_OF_SEAT[seat]
                     r_shape = r_team_shape if my_team == 0 else -r_team_shape
                     total_tricks += 1
+                    # Salva reward intermedio per logging
+                    reward_log.append(r_shape)
 
             # Reward finale: differenza di punteggio tra i team (solo a fine mano)
             if done:
@@ -259,10 +263,13 @@ def train(resume_from: str | None = None):
 
         total_hands += 1
 
+        # Stampa anche avg reward per trick
         if ep % PRINT_EVERY == 0:
-            avg_reward = sum(reward_history) / len(reward_history) if reward_history else 0
+            avg_final_reward = sum(reward_history) / len(reward_history) if reward_history else 0
+            avg_trick_reward = sum(reward_log) / len(reward_log) if reward_log else 0
             print(f"[ep {ep}] replay={len(rb)} opt_steps={opt_steps} eps={epsilon(opt_steps):.3f} "
-                  f"hands={total_hands} tricks={total_tricks} avg_reward={avg_reward:.2f}")
+                  f"hands={total_hands} tricks={total_tricks} avg_final_reward={avg_final_reward:.2f} "
+                  f"avg_trick_reward={avg_trick_reward:.2f}")
 
         # Checkpoint automatico
         if ep % CHECKPOINT_EVERY == 0:

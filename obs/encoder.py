@@ -5,15 +5,22 @@ import torch
 from game4p import GameState, legal_action_mask
 from cards import id_to_card
 
-def update_void_flags(void_flags, trick):
-    """Aggiorna i void flags: se un giocatore non segue il seme d'uscita, segna che è void su quel seme."""
-    if len(trick.plays) < 2:
-        return void_flags  # niente da aggiornare se non ci sono abbastanza carte
-    lead_suit = id_to_card(trick.plays[0][1]).suit
-    for seat, cid in trick.plays[1:]:
-        suit = id_to_card(cid).suit
-        if suit != lead_suit:
-            void_flags[seat][lead_suit] = 1
+def update_void_flags(void_flags, state, seat, action):
+    """
+    Aggiorna i void flags: se un giocatore non segue il seme d'uscita,
+    segna che è void su quel seme.
+    """
+    # Se non c'è almeno una carta nel trick, non aggiorno nulla
+    if not state.trick.plays:
+        return void_flags
+
+    lead_suit = id_to_card(state.trick.plays[0][1]).suit
+    suit = id_to_card(action).suit
+
+    # Se il giocatore non ha seguito il seme d'uscita → segno void
+    if suit != lead_suit:
+        void_flags[seat][lead_suit] = 1
+
     return void_flags
 
 def encode_state(state: GameState, seat: int, void_flags):

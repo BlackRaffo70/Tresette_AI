@@ -13,6 +13,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.amp import GradScaler, autocast
 
 from game4p import deal, step, GameState, TEAM_OF_SEAT
 from rules import score_cards_thirds
@@ -27,7 +28,9 @@ SEED = 42
 random.seed(SEED)
 torch.manual_seed(SEED)
 
-EPISODES = 2_000_000       # molto più alto, la L40S lo regge
+
+###PARAMETRI PROVVISORI PER CPU
+EPISODES = 100       # molto più alto, la L40S lo regge
 GAMMA = 0.99
 LR = 1e-4                  # più basso, training più stabile
 BATCH_SIZE = 2048          # sfrutta la VRAM della L40S
@@ -36,8 +39,8 @@ TARGET_SYNC = 10_000       # aggiorna meno spesso, più stabile
 EPS_START = 1.0
 EPS_END = 0.01             # meno esplorazione alla fine
 EPS_DECAY_STEPS = 1_000_000
-PRINT_EVERY = 1000
-CHECKPOINT_EVERY = 10_000  # salva meno spesso perché episodi tanti
+PRINT_EVERY = 10
+CHECKPOINT_EVERY = 10  # salva meno spesso perché episodi tanti
 
 TRICK_SHAPING_SCALE = 1.0 / 3.0
 
@@ -144,7 +147,7 @@ def train(resume_from: str | None = None):
 
     opt = optim.Adam(policy.parameters(), lr=LR)
     rb = Replay(REPLAY_CAP)
-    scaler = torch.cuda.amp.GradScaler(enabled=torch.cuda.is_available())
+    scaler = GradScaler(enabled=torch.cuda.is_available())
     opt_steps = 0
     start_ep = 1
 
@@ -236,8 +239,9 @@ def train(resume_from: str | None = None):
             # Ottimizzazione DQN
             if len(rb) >= BATCH_SIZE:
                 s,a,r_b,s2,d,m2 = rb.sample(BATCH_SIZE)
-                with torch.cuda.amp.autocast():
-                    q = policy(s).gather(1, a)
+                # Usa autocast compatibile CPU/GPU
+                with autocast(device_type="cuda" if torch.cuda.is_available() else "cpu", enabled=True):
+                    q = policy(s, mask).gather(1, a)
                     with torch.no_grad():
                         q2 = target(s2, m2).max(dim=1, keepdim=True)[0]
                         y = r_b + (1.0 - d) * GAMMA * q2

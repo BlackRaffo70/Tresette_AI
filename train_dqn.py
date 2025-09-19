@@ -144,7 +144,7 @@ def train(resume_from: str | None = None):
 
     opt = optim.Adam(policy.parameters(), lr=LR)
     rb = Replay(REPLAY_CAP)
-    scaler = torch.cuda.amp.GradScaler()
+    scaler = torch.cuda.amp.GradScaler(enabled=torch.cuda.is_available())
     opt_steps = 0
     start_ep = 1
 

@@ -156,19 +156,37 @@ def euristica(state: GameState, legal_idx: list[int]) -> int:
         min_strength = min(id_to_card(c).strength for c in legal_idx)
         candidate = [c for c in legal_idx if id_to_card(c).strength == min_strength]
 
-        if len(candidate) == 1:
-            return candidate[0]
-        else:
-            # Conta quante carte di ciascun seme sono già uscite
+        # --- Nuovo controllo: ci sono carte più deboli ancora in circolo? ---
+        # Costruisci l’insieme delle carte uscite
+        carte_uscite = set()
+        for _, cid in state.trick.plays:
+            carte_uscite.add(cid)
+        for team_cards in state.captures_team.values():
+            carte_uscite.update(team_cards)
+
+        # Prendi tutte le carte non ancora viste
+        tutte_le_carte = set(range(40))  # mazzo da 40
+        carte_in_giro = tutte_le_carte - carte_uscite
+
+        # Controlla se esistono carte con strength < della candidata
+        min_strength_in_circolo = min(id_to_card(c).strength for c in carte_in_giro)
+        if min_strength_in_circolo < min_strength:
+            # se sì → non scartare quella, cerca altra opzione (più alta ma meno rischiosa)
+            alternative = [c for c in legal_idx if id_to_card(c).strength > min_strength]
+            if alternative:
+                candidate = alternative
+
+        # Se più carte rimangono candidate, scegli quella del seme più scaricato
+        if len(candidate) > 1:
             seme_counts = {}
             for _, cid in state.trick.plays:
                 seme_counts[id_to_card(cid).suit] = seme_counts.get(id_to_card(cid).suit, 0) + 1
             for team_cards in state.captures_team.values():
                 for cid in team_cards:
                     seme_counts[id_to_card(cid).suit] = seme_counts.get(id_to_card(cid).suit, 0) + 1
-
-            # Tra le candidate, scarta quella del seme più "scaricato"
             return max(candidate, key=lambda c: seme_counts.get(id_to_card(c).suit, 0))
+        else:
+            return candidate[0]
 
 # ================================
 # Training

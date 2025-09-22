@@ -152,7 +152,23 @@ def euristica(state: GameState, legal_idx: list[int]) -> int:
                         return min(other, key=lambda c: id_to_card(c).strength)
         return min(same_suit, key=lambda c: id_to_card(c).strength)
     else:
-        return min(legal_idx, key=lambda c: id_to_card(c).strength)
+        # Trova la forza minima tra le carte legali
+        min_strength = min(id_to_card(c).strength for c in legal_idx)
+        candidate = [c for c in legal_idx if id_to_card(c).strength == min_strength]
+
+        if len(candidate) == 1:
+            return candidate[0]
+        else:
+            # Conta quante carte di ciascun seme sono già uscite
+            seme_counts = {}
+            for _, cid in state.trick.plays:
+                seme_counts[id_to_card(cid).suit] = seme_counts.get(id_to_card(cid).suit, 0) + 1
+            for team_cards in state.captures_team.values():
+                for cid in team_cards:
+                    seme_counts[id_to_card(cid).suit] = seme_counts.get(id_to_card(cid).suit, 0) + 1
+
+            # Tra le candidate, scarta quella del seme più "scaricato"
+            return max(candidate, key=lambda c: seme_counts.get(id_to_card(c).suit, 0))
 
 # ================================
 # Training

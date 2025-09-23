@@ -16,6 +16,13 @@ from game4p import GameState
 from utils.HeuristicAgent import HeuristicAgent
 
 import torch
+
+print("CUDA disponibile:", torch.cuda.is_available())
+if torch.cuda.is_available():
+    print("Nome GPU:", torch.cuda.get_device_name(0))
+    print("Memoria allocata:", torch.cuda.memory_allocated(0) / 1024**2, "MB")
+    print("Memoria riservata:", torch.cuda.memory_reserved(0) / 1024**2, "MB")
+
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim

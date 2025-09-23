@@ -31,7 +31,8 @@ if AMP_ENABLED:
     from torch.cuda.amp import GradScaler, autocast
     scaler = GradScaler()
     def amp_autocast():
-        return autocast(device_type="cuda", dtype=torch.float16)
+        return autocast(dtype=torch.float16)
+
 else:
     class _NoOpScaler:
         def scale(self, loss): return loss

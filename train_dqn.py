@@ -10,6 +10,11 @@ from collections import deque
 from typing import Tuple, Dict
 from contextlib import nullcontext
 
+from cards import id_to_card
+from game4p import GameState
+
+from utils.HeuristicAgent import HeuristicAgent
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -126,6 +131,7 @@ def epsilon(step: int) -> float:
     ratio = min(1.0, step / EPS_DECAY_STEPS)
     return EPS_END + (EPS_START - EPS_END) * math.exp(-3.0 * ratio)
 
+"""
 # ================================
 # Euristica
 # ================================
@@ -175,6 +181,7 @@ def euristica(state: GameState, legal_idx: list[int]) -> int:
             return max(candidate, key=lambda c: seme_counts.get(id_to_card(c).suit, 0))
         else:
             return candidate[0]
+"""
 
 # ================================
 # Training
@@ -223,11 +230,12 @@ def train(resume_from: str | None = None):
 
             if ep < 500:
                 if random.random() < 0.7:
-                    action = euristica(state, legal_idx)
-                else:
+                    action = HeuristicAgent.choose_action(state, legal_idx)
+                else:  # 30% casuale
                     action = random.choice(legal_idx)
-            elif ep < 3000:
-                action = euristica(state, legal_idx)
+            elif ep < 3000:  # Fase 2: euristica pura
+                    action = HeuristicAgent.choose_action(state, legal_idx)
+
             else:
                 if random.random() < eps:
                     action = random.choice(legal_idx)
@@ -240,28 +248,42 @@ def train(resume_from: str | None = None):
             prev_captures = {0:list(state.captures_team[0]),1:list(state.captures_team[1])}
             next_state, rewards, done, info = step(state, action)
 
-            trick_closed = (len(next_state.trick.plays) == 0) and (state.trick.leader != next_state.trick.leader)
+            # Logga il punteggio della mano (differenza tra team)
+            my_team_score = rewards[0] - rewards[1]
+            reward_log.append(my_team_score)
+
+            # Reward shaping: terzi catturati
+            trick_closed = next_state.tricks_played > state.tricks_played
             r_shape = 0.0
             if trick_closed:
                 new0 = score_cards_thirds(next_state.captures_team[0]) - score_cards_thirds(prev_captures[0])
                 new1 = score_cards_thirds(next_state.captures_team[1]) - score_cards_thirds(prev_captures[1])
-                if new0 > 0 or new1 > 0:
-                    r_team_shape = (new0 - new1) * TRICK_SHAPING_SCALE
-                    my_team = TEAM_OF_SEAT[seat]
-                    r_shape = r_team_shape if my_team == 0 else -r_team_shape
-                    total_tricks += 1
-                    reward_log.append(r_shape)
+                # if new0>0 or new1>0: AGGIUNGE SOLO I TRICK CHE DANNO PUNTI
+                r_team_shape = (new0 - new1) * TRICK_SHAPING_SCALE
+                my_team = TEAM_OF_SEAT[seat]
+                r_shape = r_team_shape if my_team == 0 else -r_team_shape
 
+                # Aumenta peso ultima mano
+                current_hand = next_state.tricks_played
+                if current_hand == 10:
+                    r_shape *= 2.0
+
+                total_tricks += 1
+                # Salva reward intermedio per logging
+                reward_log.append(r_shape)
+
+            # Reward finale: differenza di punteggio tra i team (solo a fine mano)
             if done:
                 my_team = TEAM_OF_SEAT[seat]
                 other_team = 1 - my_team
                 r_final = float(rewards[my_team]) - float(rewards[other_team])
-                reward_history.append(r_final)
-                if len(reward_history) > 1000:
+                reward_history.append(r_final)  # log reward finale
+                if len(reward_history) > 1000:  # tieni solo ultimi 1000 episodi
                     reward_history.pop(0)
             else:
                 r_final = 0.0
 
+            # Reward totale = shaping intermedio + finale
             r = r_shape + r_final
 
             x_next, mask_next = encode_state(next_state, seat, void_flags)

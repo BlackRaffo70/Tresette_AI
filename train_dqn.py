@@ -84,7 +84,7 @@ class DQNNet(nn.Module):
         h = F.relu(self.fc2(h))
         q = self.out(h)
         if mask is not None:
-            q = q.masked_fill(mask == 0, -1e9)
+            q = q.masked_fill(mask == 0, -1e4)
         return q
 
 # ================================

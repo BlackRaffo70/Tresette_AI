@@ -1,5 +1,5 @@
 # ================================
-# File: train_dqn.py (fixed)
+# File: train_dqn.py (GPU ready)
 # ================================
 from __future__ import annotations
 import os
@@ -18,7 +18,7 @@ import torch.optim as optim
 # --- Device selection (CUDA > MPS > CPU)
 if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
-    AMP_ENABLED = True  # AMP solo su CUDA
+    AMP_ENABLED = True
 elif getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
     DEVICE = torch.device("mps")
     AMP_ENABLED = False
@@ -26,12 +26,12 @@ else:
     DEVICE = torch.device("cpu")
     AMP_ENABLED = False
 
-# GradScaler safe: usa CUDA AMP se disponibile, altrimenti no-op
+# GradScaler / autocast compatibili
 if AMP_ENABLED:
     from torch.cuda.amp import GradScaler, autocast
     scaler = GradScaler()
     def amp_autocast():
-        return autocast(dtype=torch.float16)
+        return autocast(device_type="cuda", dtype=torch.float16)
 else:
     class _NoOpScaler:
         def scale(self, loss): return loss
@@ -54,20 +54,19 @@ SEED = 42
 random.seed(SEED)
 torch.manual_seed(SEED)
 
-# PARAMETRI PER GPU L40 (48GB VRAM)
-EPISODES = 20000          # più episodi, sfrutti la velocità della GPU
-GAMMA = 0.99              # resta stabile, buono per giochi di carte
-LR = 3e-4                 # learning rate più basso per stabilità
-BATCH_SIZE = 512          # batch grande, sfrutta la memoria enorme
-REPLAY_CAP = 1_000_000    # replay buffer molto ampio
-TARGET_SYNC = 5000        # target network aggiornato meno spesso
+# Parametri consigliati per L40
+EPISODES = 20000
+GAMMA = 0.99
+LR = 3e-4
+BATCH_SIZE = 512
+REPLAY_CAP = 1_000_000
+TARGET_SYNC = 5000
 EPS_START = 1.0
-EPS_END = 0.05            # puoi spingere più in basso per esplorazione fine
-EPS_DECAY_STEPS = 20_000  # decadimento più lento, hai più tempo per esplorare
+EPS_END = 0.05
+EPS_DECAY_STEPS = 20_000
 PRINT_EVERY = 500
-CHECKPOINT_EVERY = 5000   # checkpoint meno frequenti, salvataggi più pesanti
-TRICK_SHAPING_SCALE = 1.0 / 8.0   # shaping più soft (perché con tanti episodi l’AI impara meglio)
-
+CHECKPOINT_EVERY = 5000
+TRICK_SHAPING_SCALE = 1.0 / 8.0
 
 # ================================
 # DQN
@@ -88,25 +87,24 @@ class DQNNet(nn.Module):
         return q
 
 # ================================
-# Replay Buffer  (salva anche la mask corrente!)
+# Replay Buffer
 # ================================
 class Replay:
     def __init__(self, cap=100_000):
         self.buf = deque(maxlen=cap)
 
     def push(self, s, m, a, r, s_next, m_next, done):
-        # s, s_next, m, m_next sono tensori già su DEVICE
         self.buf.append((s.detach(), m.detach(), a, r, s_next.detach(), m_next.detach(), done))
 
     def sample(self, B):
         batch = random.sample(self.buf, B)
         s, m, a, r, s2, m2, d = zip(*batch)
-        s  = torch.cat(s, dim=0)
-        m  = torch.cat(m, dim=0)
+        s  = torch.cat(s, dim=0).to(DEVICE)
+        m  = torch.cat(m, dim=0).to(DEVICE)
         a  = torch.tensor(a, dtype=torch.long, device=DEVICE).unsqueeze(1)
         r  = torch.tensor(r, dtype=torch.float32, device=DEVICE).unsqueeze(1)
-        s2 = torch.cat(s2, dim=0)
-        m2 = torch.cat(m2, dim=0)
+        s2 = torch.cat(s2, dim=0).to(DEVICE)
+        m2 = torch.cat(m2, dim=0).to(DEVICE)
         d  = torch.tensor(d, dtype=torch.float32, device=DEVICE).unsqueeze(1)
         return s, m, a, r, s2, m2, d
 
@@ -117,7 +115,6 @@ class Replay:
 # Feature dimension & epsilon
 # ================================
 def feature_dim() -> int:
-    # mano(40) + uscite(40) + voids(16) + seat(4) + ally(4) + segnali(48)
     return 40 + 40 + 16 + 4 + 4 + 48
 
 def epsilon(step: int) -> float:
@@ -141,7 +138,6 @@ def euristica(state: GameState, legal_idx: list[int]) -> int:
     same_suit = [cid for cid in legal_idx if id_to_card(cid).suit == lead_suit]
 
     if same_suit:
-        # evita Asso se 2 o 3 non usciti
         for cid in same_suit:
             card = id_to_card(cid)
             if card.rank == "A":
@@ -153,31 +149,17 @@ def euristica(state: GameState, legal_idx: list[int]) -> int:
                         return min(other, key=lambda c: id_to_card(c).strength)
         return min(same_suit, key=lambda c: id_to_card(c).strength)
     else:
-        # Trova la forza minima tra le carte legali
         min_strength = min(id_to_card(c).strength for c in legal_idx)
         candidate = [c for c in legal_idx if id_to_card(c).strength == min_strength]
 
-        # --- Nuovo controllo: ci sono carte più deboli ancora in circolo? ---
-        # Costruisci l’insieme delle carte uscite
-        carte_uscite = set()
-        for _, cid in state.trick.plays:
-            carte_uscite.add(cid)
-        for team_cards in state.captures_team.values():
-            carte_uscite.update(team_cards)
-
-        # Prendi tutte le carte non ancora viste
-        tutte_le_carte = set(range(40))  # mazzo da 40
+        tutte_le_carte = set(range(40))
         carte_in_giro = tutte_le_carte - carte_uscite
-
-        # Controlla se esistono carte con strength < della candidata
         min_strength_in_circolo = min(id_to_card(c).strength for c in carte_in_giro)
         if min_strength_in_circolo < min_strength:
-            # se sì → non scartare quella, cerca altra opzione (più alta ma meno rischiosa)
             alternative = [c for c in legal_idx if id_to_card(c).strength > min_strength]
             if alternative:
                 candidate = alternative
 
-        # Se più carte rimangono candidate, scegli quella del seme più scaricato
         if len(candidate) > 1:
             seme_counts = {}
             for _, cid in state.trick.plays:
@@ -205,7 +187,6 @@ def train(resume_from: str | None = None):
     opt_steps = 0
     start_ep = 1
 
-    # Ripresa da checkpoint
     if resume_from and os.path.exists(resume_from):
         checkpoint = torch.load(resume_from, map_location=DEVICE)
         policy.load_state_dict(checkpoint["model"])
@@ -229,19 +210,20 @@ def train(resume_from: str | None = None):
 
         while not done:
             seat = state.current_player
-            x, mask = encode_state(state, seat, void_flags)        # <-- mask corrente
+            x, mask = encode_state(state, seat, void_flags)
+            x, mask = x.to(DEVICE), mask.to(DEVICE)
             eps = epsilon(opt_steps)
 
             legal_idx = torch.nonzero(mask[0]).view(-1).tolist()
 
-            if ep < 500:  # Warm-up: euristica 70% + random 30%
+            if ep < 500:
                 if random.random() < 0.7:
                     action = euristica(state, legal_idx)
                 else:
                     action = random.choice(legal_idx)
-            elif ep < 3000:  # Fase 2: euristica pura
+            elif ep < 3000:
                 action = euristica(state, legal_idx)
-            else:            # Fase 3: DQN epsilon-greedy
+            else:
                 if random.random() < eps:
                     action = random.choice(legal_idx)
                 else:
@@ -249,13 +231,10 @@ def train(resume_from: str | None = None):
                         q = policy(x, mask)
                         action = int(q.argmax(dim=1).item())
 
-            # update void flags prima dello step
             update_void_flags(void_flags, state, seat, action)
-
             prev_captures = {0:list(state.captures_team[0]),1:list(state.captures_team[1])}
             next_state, rewards, done, info = step(state, action)
 
-            # shaping trick
             trick_closed = (len(next_state.trick.plays) == 0) and (state.trick.leader != next_state.trick.leader)
             r_shape = 0.0
             if trick_closed:
@@ -268,7 +247,6 @@ def train(resume_from: str | None = None):
                     total_tricks += 1
                     reward_log.append(r_shape)
 
-            # reward finale a fine mano
             if done:
                 my_team = TEAM_OF_SEAT[seat]
                 other_team = 1 - my_team
@@ -281,19 +259,16 @@ def train(resume_from: str | None = None):
 
             r = r_shape + r_final
 
-            # stato successivo + mask successiva
             x_next, mask_next = encode_state(next_state, seat, void_flags)
+            x_next, mask_next = x_next.to(DEVICE), mask_next.to(DEVICE)
 
-            # PUSH: salva anche mask corrente
             rb.push(x, mask, action, r, x_next, mask_next, float(done))
-
             state = next_state
 
-            # Ottimizzazione DQN
             if len(rb) >= BATCH_SIZE:
                 s, m, a, r_b, s2, m2, d = rb.sample(BATCH_SIZE)
                 with amp_autocast():
-                    q = policy(s, m).gather(1, a)                  # <-- usa mask corrente m
+                    q = policy(s, m).gather(1, a)
                     with torch.no_grad():
                         q2 = target(s2, m2).max(dim=1, keepdim=True)[0]
                         y = r_b + (1.0 - d) * GAMMA * q2

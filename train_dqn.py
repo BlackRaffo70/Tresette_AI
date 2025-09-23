@@ -15,6 +15,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+
 # --- Device selection (CUDA > MPS > CPU)
 if torch.cuda.is_available():
     DEVICE = torch.device("cuda")

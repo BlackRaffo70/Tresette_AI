@@ -54,19 +54,20 @@ SEED = 42
 random.seed(SEED)
 torch.manual_seed(SEED)
 
-# PARAMETRI PROVVISORI PER CPU/Mac
-EPISODES = 3000
-GAMMA = 0.99
-LR = 1e-3
-BATCH_SIZE = 32
-REPLAY_CAP = 10_000
-TARGET_SYNC = 1000
+# PARAMETRI PER GPU L40 (48GB VRAM)
+EPISODES = 20000          # più episodi, sfrutti la velocità della GPU
+GAMMA = 0.99              # resta stabile, buono per giochi di carte
+LR = 3e-4                 # learning rate più basso per stabilità
+BATCH_SIZE = 512          # batch grande, sfrutta la memoria enorme
+REPLAY_CAP = 1_000_000    # replay buffer molto ampio
+TARGET_SYNC = 5000        # target network aggiornato meno spesso
 EPS_START = 1.0
-EPS_END = 0.1
-EPS_DECAY_STEPS = 1000
-PRINT_EVERY = 200
-CHECKPOINT_EVERY = 1000
-TRICK_SHAPING_SCALE = 1.0 / 4.0
+EPS_END = 0.05            # puoi spingere più in basso per esplorazione fine
+EPS_DECAY_STEPS = 20_000  # decadimento più lento, hai più tempo per esplorare
+PRINT_EVERY = 500
+CHECKPOINT_EVERY = 5000   # checkpoint meno frequenti, salvataggi più pesanti
+TRICK_SHAPING_SCALE = 1.0 / 8.0   # shaping più soft (perché con tanti episodi l’AI impara meglio)
+
 
 # ================================
 # DQN

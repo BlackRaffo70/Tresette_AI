@@ -51,6 +51,13 @@ def deal(rng: random.Random | None = None, leader: int = 0) -> GameState:
 def step(state: GameState, card_id: int) -> Tuple[GameState, Dict[int,int], bool, Dict]:
     """Esegue una giocata dal giocatore corrente e calcola eventuali segnali."""
     p = state.current_player
+
+    if card_id not in state.hands[p]:
+        print("DEBUG ERRORE → seat:", p,
+              "action:", card_id,
+              "hand:", state.hands[p],
+              "plays:", state.trick.plays)
+
     assert card_id in state.hands[p], "Carta non in mano"
     la = legal_actions(state.hands[p], state.trick)
     assert card_id in la, "Mossa illegale: devi seguire il seme se puoi"

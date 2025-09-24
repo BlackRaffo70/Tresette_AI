@@ -354,4 +354,4 @@ def train(resume_from: str | None = None):
 # Entrypoint
 # ================================
 if __name__ == "__main__":
-    train(resume_from=None)
+    train(resume_from="dqn_tressette_checkpoint_ep5000.pt")

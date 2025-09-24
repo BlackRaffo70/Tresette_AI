@@ -58,7 +58,10 @@ def step(state: GameState, card_id: int) -> Tuple[GameState, Dict[int,int], bool
               "hand:", state.hands[p],
               "plays:", state.trick.plays)
 
-    assert card_id in state.hands[p], "Carta non in mano"
+    assert card_id in state.hands[p], (
+        f"[ERRORE STEP] Carta {card_id} non in mano al giocatore {p}. "
+        f"Mano attuale: {state.hands[p]}"
+    )
     la = legal_actions(state.hands[p], state.trick)
     assert card_id in la, "Mossa illegale: devi seguire il seme se puoi"
 

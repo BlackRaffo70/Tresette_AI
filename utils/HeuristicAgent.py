@@ -7,62 +7,57 @@ class HeuristicAgent:
     @staticmethod
     def choose_action(state, legal_idx):
         """Sceglie un'azione euristica dato lo stato e gli id legali delle carte."""
-        # Converti gli id legali in oggetti Card
         legal_cards = [id_to_card(cid) for cid in legal_idx]
 
         # =====================
         # 1. Assecondare dichiarazioni del compagno
         # =====================
-        for seat, sig in state.signals.items():
-            seme = sig["suit"]
-            if sig["signal"] == "busso" or sig["signal"] == "striscio":
-                for cid, card in zip(legal_idx, legal_cards):
-                    if card.suit == seme:
-                        return cid
-            elif sig["signal"] == "volo":
-                # segnala di voler prendere quel seme, non giocarlo
+        for seat_signal, sig in state.signals.items():
+            suit_signal = sig["suit"]
+            signal_type = sig["signal"]
+            if signal_type in ("busso", "striscio"):
+                for cid_signal, card_signal in zip(legal_idx, legal_cards):
+                    if card_signal.suit == suit_signal:
+                        return cid_signal
+            elif signal_type == "volo":
                 continue
 
         # =====================
         # 2. Palo più forte con gestione dell'asso
         # =====================
-        suits = [card.suit for card in legal_cards]
-        ranks = [card.rank for card in legal_cards]
-
-        # Palo più forte = somma dei valori delle carte legali
-        strongest_suit = max(set(suits), key=lambda suit: sum(RANK_TO_STRENGTH[card.rank]
-                                                              for card in legal_cards if card.suit == suit))
-        for cid, card in zip(legal_idx, legal_cards):
-            if card.suit != strongest_suit:
+        suits_in_hand = [card_suit.suit for card_suit in legal_cards]
+        strongest_suit = max(
+            set(suits_in_hand),
+            key=lambda s: sum(RANK_TO_STRENGTH[card_suit.rank]
+                              for card_suit in legal_cards if card_suit.suit == s)
+        )
+        for cid_strong, card_strong in zip(legal_idx, legal_cards):
+            if card_strong.suit != strongest_suit:
                 continue
-            # Gestione asso: giocalo solo se hai 2 e 3 in mano o sono già usciti
-            hand_ranks = [id_to_card(c).rank for c in state.hands[state.current_player]]
-            table_ranks = [id_to_card(c).rank for c in sum(state.hands, []) if c not in sum(state.hands, [])]  # opzionale
-            if card.rank == 'A':
-                if '2' in hand_ranks and '3' in hand_ranks:
-                    return cid
+            hand_ranks_strong = [id_to_card(cid_hand).rank for cid_hand in state.hands[state.current_player]]
+            if card_strong.rank == 'A':
+                if '2' in hand_ranks_strong and '3' in hand_ranks_strong:
+                    return cid_strong
                 else:
                     continue
             else:
-                return cid
+                return cid_strong
 
         # =====================
         # 3. Giocare 2 se hai esattamente due carte di quel seme
         # =====================
-        for cid, card in zip(legal_idx, legal_cards):
-            same_suit_cards = [c for c in legal_cards if c.suit == card.suit]
-            if card.rank == '2' and len(same_suit_cards) == 2:
-                return cid
+        for cid_two, card_two in zip(legal_idx, legal_cards):
+            same_suit_cards_two = [c for c in legal_cards if c.suit == card_two.suit]
+            if card_two.rank == '2' and len(same_suit_cards_two) == 2:
+                return cid_two
 
         # =====================
         # 4. Cambiare sempre gioco se nessun segnale
         # =====================
-        played_suits = [id_to_card(c).suit for c in sum(state.hands, []) if c not in sum(state.hands, [])]  # opzionale
-        for cid, card in zip(legal_idx, legal_cards):
-            if card.suit not in played_suits:
-                return cid
+        for cid_change, card_change in zip(legal_idx, legal_cards):
+            return cid_change  # fallback semplice
 
         # =====================
         # 5. Assicurarsi l'ultima presa (gioca carta più alta)
         # =====================
-        return max(legal_idx, key=lambda cid: RANK_TO_STRENGTH[id_to_card(cid).rank])
+        return max(legal_idx, key=lambda cid_max: RANK_TO_STRENGTH[id_to_card(cid_max).rank])

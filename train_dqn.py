@@ -6,6 +6,7 @@ import os
 import pickle
 import random
 import math
+import time
 from collections import deque
 from typing import Tuple, Dict
 from contextlib import nullcontext
@@ -67,23 +68,24 @@ from cards import id_to_card
 # ================================
 # Config
 # ================================
-SEED = 42
-random.seed(SEED)
-torch.manual_seed(SEED)
+SEED = int(time.time())  # seed diverso ad ogni run
+torch.manual_seed(SEED)  # PyTorch usa questo seed
+# random.seed(SEED)       # NON impostare random.seed fisso
 
-# Parametri consigliati per L40
-EPISODES = 20000
+# Parametri ridotti per test locale
+EPISODES = 2000          # abbastanza episodi per vedere evoluzione
 GAMMA = 0.99
 LR = 3e-4
-BATCH_SIZE = 512
-REPLAY_CAP = 1_000_000
-TARGET_SYNC = 5000
+BATCH_SIZE = 64          # batch moderato
+REPLAY_CAP = 50_000      # replay buffer medio
+TARGET_SYNC = 500         # target aggiornato ogni 500 ottimizzazioni
 EPS_START = 1.0
 EPS_END = 0.05
-EPS_DECAY_STEPS = 20_000
-PRINT_EVERY = 500
-CHECKPOINT_EVERY = 5000
+EPS_DECAY_STEPS = 5000   # decay progressivo
+PRINT_EVERY = 200         # stampa ogni 50 episodi
+CHECKPOINT_EVERY = 500   # salva checkpoint ogni 500 episodi
 TRICK_SHAPING_SCALE = 1.0 / 8.0
+
 
 # ================================
 # DQN
@@ -200,11 +202,19 @@ def train(resume_from: str | None = None):
     target.load_state_dict(policy.state_dict())
     target.eval()
 
-    reward_history = []
     opt = optim.Adam(policy.parameters(), lr=LR)
     rb = Replay(REPLAY_CAP)
     opt_steps = 0
     start_ep = 1
+
+    total_tricks = 0
+    total_hands = 0
+    reward_history = []
+
+    """
+    reward_history_team0 = []
+    reward_history_team1 = []
+    """
 
     if resume_from and os.path.exists(resume_from):
         checkpoint = torch.load(resume_from, map_location=DEVICE)
@@ -214,15 +224,11 @@ def train(resume_from: str | None = None):
         start_ep = checkpoint.get("episode", 0) + 1
         rb_path = resume_from.replace(".pt", ".pkl")
         if os.path.exists(rb_path):
-            with open(rb_path, "rb") as f:
-                rb.buf = pickle.load(f)
+            rb.buf = deque(torch.load(rb_path), maxlen=REPLAY_CAP)
         print(f"Ripreso training da episodio {start_ep}, opt_steps={opt_steps}, replay={len(rb)}")
 
-    total_tricks = 0
-    total_hands = 0
-
     for ep in range(start_ep, EPISODES + 1):
-        state = deal(rng=random.Random(SEED + ep), leader=ep % 4)
+        state = deal(leader=ep % 4)
         void_flags = [[0]*4 for _ in range(4)]
         reward_log = []
         done = False
@@ -234,6 +240,7 @@ def train(resume_from: str | None = None):
             eps = epsilon(opt_steps)
 
             legal_idx = torch.nonzero(mask[0]).view(-1).tolist()
+            action = legal_idx[0] if legal_idx else 0  # valore di default
 
             if ep < 500:
                 if random.random() < 0.7:
@@ -255,6 +262,9 @@ def train(resume_from: str | None = None):
 
             update_void_flags(void_flags, state, seat, action)
             prev_captures = {0:list(state.captures_team[0]),1:list(state.captures_team[1])}
+
+            #print(f"[DEBUG] Giocatore {state.current_player} prova a giocare {action}. Mano: {state.hands[state.current_player]}")
+
             next_state, rewards, done, info = step(state, action)
 
             # Logga il punteggio della mano (differenza tra team)
@@ -322,6 +332,103 @@ def train(resume_from: str | None = None):
                     target.load_state_dict(policy.state_dict())
 
         total_hands += 1
+        """
+
+        ###MODIFICO WHILE PER REWARDS SEPARATI PER LE SQUADRE
+        while not done:
+            seat = state.current_player
+            x, mask = encode_state(state, seat, void_flags)
+            x, mask = x.to(DEVICE), mask.to(DEVICE)
+            eps = epsilon(opt_steps)
+
+            legal_idx = torch.nonzero(mask[0]).view(-1).tolist()
+            action = legal_idx[0] if legal_idx else 0
+
+            # Politica epsilon-greedy / euristica
+            if ep < 500:
+                if random.random() < 0.7:
+                    action = HeuristicAgent.choose_action(state, legal_idx)
+                else:
+                    action = random.choice(legal_idx)
+            elif ep < 3000:
+                action = HeuristicAgent.choose_action(state, legal_idx)
+                assert action in legal_idx
+            else:
+                if random.random() < eps:
+                    action = random.choice(legal_idx)
+                else:
+                    with torch.no_grad():
+                        q = policy(x, mask)
+                        action = int(q.argmax(dim=1).item())
+
+            update_void_flags(void_flags, state, seat, action)
+            prev_captures = {0: list(state.captures_team[0]), 1: list(state.captures_team[1])}
+
+            next_state, rewards, done, info = step(state, action)
+
+            # --- Reward shaping per trick intermedio ---
+            trick_closed = next_state.tricks_played > state.tricks_played
+            if trick_closed:
+                new0 = score_cards_thirds(next_state.captures_team[0]) - score_cards_thirds(prev_captures[0])
+                new1 = score_cards_thirds(next_state.captures_team[1]) - score_cards_thirds(prev_captures[1])
+
+                # Reward simmetrici
+                r_shape_team0 = (new0 - new1) * TRICK_SHAPING_SCALE
+                r_shape_team1 = (new1 - new0) * TRICK_SHAPING_SCALE
+
+                if next_state.tricks_played == 10:  # aumenta peso ultima mano
+                    r_shape_team0 *= 2.0
+                    r_shape_team1 *= 2.0
+
+                total_tricks += 1
+            else:
+                r_shape_team0 = r_shape_team1 = 0.0
+
+            # --- Reward finale per squadra a fine mano ---
+            if done:
+                reward_team0 = float(rewards[0]) - float(rewards[1])
+                reward_team1 = float(rewards[1]) - float(rewards[0])
+
+                reward_history_team0.append(reward_team0)
+                reward_history_team1.append(reward_team1)
+                if len(reward_history_team0) > 1000:
+                    reward_history_team0.pop(0)
+                    reward_history_team1.pop(0)
+            else:
+                reward_team0 = reward_team1 = 0.0
+
+            # --- Reward totale per l’agente corrente ---
+            r = r_shape_team0 + reward_team0 if TEAM_OF_SEAT[seat] == 0 else r_shape_team1 + reward_team1
+
+            x_next, mask_next = encode_state(next_state, seat, void_flags)
+            x_next, mask_next = x_next.to(DEVICE), mask_next.to(DEVICE)
+
+            rb.push(x, mask, action, r, x_next, mask_next, float(done))
+            state = next_state
+
+            # --- Aggiornamento DQN ---
+            if len(rb) >= BATCH_SIZE:
+                s, m, a, r_b, s2, m2, d = rb.sample(BATCH_SIZE)
+                with amp_autocast():
+                    q = policy(s, m).gather(1, a)
+                    with torch.no_grad():
+                        q2 = target(s2, m2).max(dim=1, keepdim=True)[0]
+                        y = r_b + (1.0 - d) * GAMMA * q2
+                    loss = F.mse_loss(q, y)
+
+                opt.zero_grad()
+                scaler.scale(loss).backward()
+                scaler.unscale_(opt)
+                nn.utils.clip_grad_norm_(policy.parameters(), 1.0)
+                scaler.step(opt)
+                scaler.update()
+                opt_steps += 1
+
+                if opt_steps % TARGET_SYNC == 0:
+                    target.load_state_dict(policy.state_dict())
+
+        total_hands += 1
+        """
 
         if ep % PRINT_EVERY == 0:
             avg_final_reward = sum(reward_history) / len(reward_history) if reward_history else 0.0
@@ -329,6 +436,20 @@ def train(resume_from: str | None = None):
             print(f"[ep {ep}] replay={len(rb)} opt_steps={opt_steps} eps={epsilon(opt_steps):.3f} "
                   f"hands={total_hands} tricks={total_tricks} avg_final_reward={avg_final_reward:.2f} "
                   f"avg_trick_reward={avg_trick_reward:.2f}")
+
+        """
+        if ep % PRINT_EVERY == 0:
+            avg_final_reward_team0 = sum(reward_history_team0) / len(
+                reward_history_team0) if reward_history_team0 else 0.0
+            avg_final_reward_team1 = sum(reward_history_team1) / len(
+                reward_history_team1) if reward_history_team1 else 0.0
+            avg_trick_reward = sum(reward_log) / len(reward_log) if reward_log else 0.0
+            print(f"[ep {ep}] replay={len(rb)} opt_steps={opt_steps} eps={epsilon(opt_steps):.3f} "
+                  f"hands={total_hands} tricks={total_tricks} "
+                  f"avg_final_reward_team0={avg_final_reward_team0:.2f} "
+                  f"avg_final_reward_team1={avg_final_reward_team1:.2f} "
+                  f"avg_trick_reward={avg_trick_reward:.2f}")
+        """
 
         if ep % CHECKPOINT_EVERY == 0:
             ckpt_file = f"dqn_tressette_checkpoint_ep{ep}.pt"
@@ -340,8 +461,7 @@ def train(resume_from: str | None = None):
                 "episode": ep,
                 "config": {"in_dim": in_dim, "hidden": 256}
             }, ckpt_file)
-            with open(rb_file, "wb") as f:
-                pickle.dump(rb.buf, f)
+            torch.save(list(rb.buf), rb_file)
             print(f"[ep {ep}] checkpoint salvato: modello + replay buffer")
 
     torch.save({
@@ -354,4 +474,4 @@ def train(resume_from: str | None = None):
 # Entrypoint
 # ================================
 if __name__ == "__main__":
-    train(resume_from="dqn_tressette_checkpoint_ep5000.pt")
+    train(resume_from=None)

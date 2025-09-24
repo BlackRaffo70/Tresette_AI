@@ -68,24 +68,23 @@ from cards import id_to_card
 # ================================
 # Config
 # ================================
-SEED = int(time.time())  # seed diverso ad ogni run
-torch.manual_seed(SEED)  # PyTorch usa questo seed
-# random.seed(SEED)       # NON impostare random.seed fisso
+SEED = 42
+random.seed(SEED)
+torch.manual_seed(SEED)
 
-# Parametri ridotti per test locale
-EPISODES = 2000          # abbastanza episodi per vedere evoluzione
+# Parametri consigliati per L40
+EPISODES = 20000
 GAMMA = 0.99
 LR = 3e-4
-BATCH_SIZE = 64          # batch moderato
-REPLAY_CAP = 50_000      # replay buffer medio
-TARGET_SYNC = 500         # target aggiornato ogni 500 ottimizzazioni
+BATCH_SIZE = 512
+REPLAY_CAP = 1_000_000
+TARGET_SYNC = 5000
 EPS_START = 1.0
 EPS_END = 0.05
-EPS_DECAY_STEPS = 5000   # decay progressivo
-PRINT_EVERY = 200         # stampa ogni 50 episodi
-CHECKPOINT_EVERY = 500   # salva checkpoint ogni 500 episodi
+EPS_DECAY_STEPS = 20_000
+PRINT_EVERY = 500
+CHECKPOINT_EVERY = 5000
 TRICK_SHAPING_SCALE = 1.0 / 8.0
-
 
 # ================================
 # DQN

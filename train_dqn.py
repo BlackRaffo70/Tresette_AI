@@ -243,6 +243,8 @@ def train(resume_from: str | None = None):
             elif ep < 3000:  # Fase 2: euristica pura
                     action = HeuristicAgent.choose_action(state, legal_idx)
 
+                    assert action in legal_idx, f"Azione {action} non valida! Legal idx: {legal_idx}"
+
             else:
                 if random.random() < eps:
                     action = random.choice(legal_idx)

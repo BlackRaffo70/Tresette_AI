@@ -139,58 +139,6 @@ def epsilon(step: int) -> float:
     ratio = min(1.0, step / EPS_DECAY_STEPS)
     return EPS_END + (EPS_START - EPS_END) * math.exp(-3.0 * ratio)
 
-"""
-# ================================
-# Euristica
-# ================================
-def euristica(state: GameState, legal_idx: list[int]) -> int:
-    carte_uscite = set()
-    for _, cid in state.trick.plays:
-        carte_uscite.add(cid)
-    for team_cards in state.captures_team.values():
-        carte_uscite.update(team_cards)
-
-    if not state.trick.plays:
-        return min(legal_idx, key=lambda c: id_to_card(c).strength)
-
-    lead_suit = id_to_card(state.trick.plays[0][1]).suit
-    same_suit = [cid for cid in legal_idx if id_to_card(cid).suit == lead_suit]
-
-    if same_suit:
-        for cid in same_suit:
-            card = id_to_card(cid)
-            if card.rank == "A":
-                due = any(id_to_card(c).rank == "2" and id_to_card(c).suit == lead_suit for c in carte_uscite)
-                tre = any(id_to_card(c).rank == "3" and id_to_card(c).suit == lead_suit for c in carte_uscite)
-                if not (due and tre):
-                    other = [c for c in same_suit if id_to_card(c).rank != "A"]
-                    if other:
-                        return min(other, key=lambda c: id_to_card(c).strength)
-        return min(same_suit, key=lambda c: id_to_card(c).strength)
-    else:
-        min_strength = min(id_to_card(c).strength for c in legal_idx)
-        candidate = [c for c in legal_idx if id_to_card(c).strength == min_strength]
-
-        tutte_le_carte = set(range(40))
-        carte_in_giro = tutte_le_carte - carte_uscite
-        min_strength_in_circolo = min(id_to_card(c).strength for c in carte_in_giro)
-        if min_strength_in_circolo < min_strength:
-            alternative = [c for c in legal_idx if id_to_card(c).strength > min_strength]
-            if alternative:
-                candidate = alternative
-
-        if len(candidate) > 1:
-            seme_counts = {}
-            for _, cid in state.trick.plays:
-                seme_counts[id_to_card(cid).suit] = seme_counts.get(id_to_card(cid).suit, 0) + 1
-            for team_cards in state.captures_team.values():
-                for cid in team_cards:
-                    seme_counts[id_to_card(cid).suit] = seme_counts.get(id_to_card(cid).suit, 0) + 1
-            return max(candidate, key=lambda c: seme_counts.get(id_to_card(c).suit, 0))
-        else:
-            return candidate[0]
-"""
-
 # ================================
 # Training
 # ================================
@@ -241,12 +189,12 @@ def train(resume_from: str | None = None):
             legal_idx = torch.nonzero(mask[0]).view(-1).tolist()
             action = legal_idx[0] if legal_idx else 0  # valore di default
 
-            if ep < 500:
+            if ep < 1000:
                 if random.random() < 0.7:
                     action = HeuristicAgent.choose_action(state, legal_idx)
                 else:  # 30% casuale
                     action = random.choice(legal_idx)
-            elif ep < 3000:  # Fase 2: euristica pura
+            elif ep < 10000:  # Fase 2: euristica pura
                     action = HeuristicAgent.choose_action(state, legal_idx)
 
                     assert action in legal_idx, f"Azione {action} non valida! Legal idx: {legal_idx}"
@@ -331,103 +279,7 @@ def train(resume_from: str | None = None):
                     target.load_state_dict(policy.state_dict())
 
         total_hands += 1
-        """
 
-        ###MODIFICO WHILE PER REWARDS SEPARATI PER LE SQUADRE
-        while not done:
-            seat = state.current_player
-            x, mask = encode_state(state, seat, void_flags)
-            x, mask = x.to(DEVICE), mask.to(DEVICE)
-            eps = epsilon(opt_steps)
-
-            legal_idx = torch.nonzero(mask[0]).view(-1).tolist()
-            action = legal_idx[0] if legal_idx else 0
-
-            # Politica epsilon-greedy / euristica
-            if ep < 500:
-                if random.random() < 0.7:
-                    action = HeuristicAgent.choose_action(state, legal_idx)
-                else:
-                    action = random.choice(legal_idx)
-            elif ep < 3000:
-                action = HeuristicAgent.choose_action(state, legal_idx)
-                assert action in legal_idx
-            else:
-                if random.random() < eps:
-                    action = random.choice(legal_idx)
-                else:
-                    with torch.no_grad():
-                        q = policy(x, mask)
-                        action = int(q.argmax(dim=1).item())
-
-            update_void_flags(void_flags, state, seat, action)
-            prev_captures = {0: list(state.captures_team[0]), 1: list(state.captures_team[1])}
-
-            next_state, rewards, done, info = step(state, action)
-
-            # --- Reward shaping per trick intermedio ---
-            trick_closed = next_state.tricks_played > state.tricks_played
-            if trick_closed:
-                new0 = score_cards_thirds(next_state.captures_team[0]) - score_cards_thirds(prev_captures[0])
-                new1 = score_cards_thirds(next_state.captures_team[1]) - score_cards_thirds(prev_captures[1])
-
-                # Reward simmetrici
-                r_shape_team0 = (new0 - new1) * TRICK_SHAPING_SCALE
-                r_shape_team1 = (new1 - new0) * TRICK_SHAPING_SCALE
-
-                if next_state.tricks_played == 10:  # aumenta peso ultima mano
-                    r_shape_team0 *= 2.0
-                    r_shape_team1 *= 2.0
-
-                total_tricks += 1
-            else:
-                r_shape_team0 = r_shape_team1 = 0.0
-
-            # --- Reward finale per squadra a fine mano ---
-            if done:
-                reward_team0 = float(rewards[0]) - float(rewards[1])
-                reward_team1 = float(rewards[1]) - float(rewards[0])
-
-                reward_history_team0.append(reward_team0)
-                reward_history_team1.append(reward_team1)
-                if len(reward_history_team0) > 1000:
-                    reward_history_team0.pop(0)
-                    reward_history_team1.pop(0)
-            else:
-                reward_team0 = reward_team1 = 0.0
-
-            # --- Reward totale per l’agente corrente ---
-            r = r_shape_team0 + reward_team0 if TEAM_OF_SEAT[seat] == 0 else r_shape_team1 + reward_team1
-
-            x_next, mask_next = encode_state(next_state, seat, void_flags)
-            x_next, mask_next = x_next.to(DEVICE), mask_next.to(DEVICE)
-
-            rb.push(x, mask, action, r, x_next, mask_next, float(done))
-            state = next_state
-
-            # --- Aggiornamento DQN ---
-            if len(rb) >= BATCH_SIZE:
-                s, m, a, r_b, s2, m2, d = rb.sample(BATCH_SIZE)
-                with amp_autocast():
-                    q = policy(s, m).gather(1, a)
-                    with torch.no_grad():
-                        q2 = target(s2, m2).max(dim=1, keepdim=True)[0]
-                        y = r_b + (1.0 - d) * GAMMA * q2
-                    loss = F.mse_loss(q, y)
-
-                opt.zero_grad()
-                scaler.scale(loss).backward()
-                scaler.unscale_(opt)
-                nn.utils.clip_grad_norm_(policy.parameters(), 1.0)
-                scaler.step(opt)
-                scaler.update()
-                opt_steps += 1
-
-                if opt_steps % TARGET_SYNC == 0:
-                    target.load_state_dict(policy.state_dict())
-
-        total_hands += 1
-        """
 
         if ep % PRINT_EVERY == 0:
             avg_final_reward = sum(reward_history) / len(reward_history) if reward_history else 0.0
@@ -436,19 +288,6 @@ def train(resume_from: str | None = None):
                   f"hands={total_hands} tricks={total_tricks} avg_final_reward={avg_final_reward:.2f} "
                   f"avg_trick_reward={avg_trick_reward:.2f}")
 
-        """
-        if ep % PRINT_EVERY == 0:
-            avg_final_reward_team0 = sum(reward_history_team0) / len(
-                reward_history_team0) if reward_history_team0 else 0.0
-            avg_final_reward_team1 = sum(reward_history_team1) / len(
-                reward_history_team1) if reward_history_team1 else 0.0
-            avg_trick_reward = sum(reward_log) / len(reward_log) if reward_log else 0.0
-            print(f"[ep {ep}] replay={len(rb)} opt_steps={opt_steps} eps={epsilon(opt_steps):.3f} "
-                  f"hands={total_hands} tricks={total_tricks} "
-                  f"avg_final_reward_team0={avg_final_reward_team0:.2f} "
-                  f"avg_final_reward_team1={avg_final_reward_team1:.2f} "
-                  f"avg_trick_reward={avg_trick_reward:.2f}")
-        """
 
         if ep % CHECKPOINT_EVERY == 0:
             ckpt_file = f"dqn_tressette_checkpoint_ep{ep}.pt"

@@ -204,8 +204,10 @@ def train(resume_from: str | None = None):
                     action = random.choice(legal_idx)
                 else:
                     with torch.no_grad():
-                        q = policy(x, mask)
-                        action = int(q.argmax(dim=1).item())
+                        q = policy(x, mask).squeeze(0)
+                        q_legal = q[legal_idx]
+                        best_idx = torch.argmax(q_legal).item()
+                        action = legal_idx[best_idx]
 
             # update void flags prima dello step
             update_void_flags(void_flags, state, seat, action)

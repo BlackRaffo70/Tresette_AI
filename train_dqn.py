@@ -73,7 +73,7 @@ random.seed(SEED)
 torch.manual_seed(SEED)
 
 # Parametri consigliati per L40
-EPISODES = 20000
+EPISODES = 100000
 GAMMA = 0.99
 LR = 3e-4
 BATCH_SIZE = 512
@@ -82,8 +82,8 @@ TARGET_SYNC = 5000
 EPS_START = 1.0
 EPS_END = 0.05
 EPS_DECAY_STEPS = 20_000
-PRINT_EVERY = 500
-CHECKPOINT_EVERY = 5000
+PRINT_EVERY = 1000
+CHECKPOINT_EVERY = 10000
 TRICK_SHAPING_SCALE = 1.0 / 8.0
 
 # ================================

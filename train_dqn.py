@@ -207,10 +207,15 @@ def train(resume_from: str | None = None):
                         q = policy(x, mask)
                         action = int(q.argmax(dim=1).item())
 
+            # update void flags prima dello step
             update_void_flags(void_flags, state, seat, action)
-            prev_captures = {0:list(state.captures_team[0]),1:list(state.captures_team[1])}
 
-            #print(f"[DEBUG] Giocatore {state.current_player} prova a giocare {action}. Mano: {state.hands[state.current_player]}")
+            prev_captures = {0: list(state.captures_team[0]), 1: list(state.captures_team[1])}
+
+            # --- Fix: assicurati che l'azione sia valida ---
+            if action not in legal_idx:
+                print(f"[WARNING] Azione {action} non valida per giocatore {seat}. Legal idx: {legal_idx}")
+                action = random.choice(legal_idx)
 
             next_state, rewards, done, info = step(state, action)
 

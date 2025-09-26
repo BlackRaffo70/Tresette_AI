@@ -17,63 +17,88 @@ SEED = 123
 random.seed(SEED)
 torch.manual_seed(SEED)
 
-# Carica un modello DQN già allenato (se vuoi vedere la rete giocare)
-USE_DQN = False        # metti True se vuoi che il giocatore 0 usi la rete
+# Decidi i giocatori (seat 0-3)
+# Opzioni: "dqn", "heuristic", "random"
+PLAYERS = ["dqn", "heuristic", "dqn", "heuristic"]
+
+# Checkpoint per i DQN
 CKPT = "dqn_tressette_checkpoint_ep5000.pt"
 
+# Carica il modello DQN se serve
 policy = None
-if USE_DQN:
+if "dqn" in PLAYERS:
     policy = DQNNet(feature_dim()).to(DEVICE)
     checkpoint = torch.load(CKPT, map_location=DEVICE)
     policy.load_state_dict(checkpoint["model"])
     policy.eval()
 
 # ================================
-# Gioca una partita
+# Funzioni
 # ================================
-state = deal(leader=0)   # nuovo mazzo, giocatore 0 inizia
-void_flags = [[0]*4 for _ in range(4)]
-done = False
-
-print("=== Inizio partita Tresette ===")
-
-while not done:
-    seat = state.current_player
+def choose_action(seat, state, void_flags):
+    player_type = PLAYERS[seat]
     x, mask = encode_state(state, seat, void_flags)
     x, mask = x.to(DEVICE), mask.to(DEVICE)
-
     legal_idx = torch.nonzero(mask[0]).view(-1).tolist()
 
-    if seat == 0:  # Giocatore 0 con DQN
+    if player_type == "dqn":
         with torch.no_grad():
             q = policy(x, mask)
             action = int(q.argmax(dim=1).item())
-
-    elif seat == 1:  # Giocatore 1 random
+    elif player_type == "heuristic":
+        action = HeuristicAgent.choose_action(state, legal_idx)
+    else:  # random
         action = random.choice(legal_idx)
+    return action
 
-    elif seat == 2:  # Giocatore 2 euristica
-        action = HeuristicAgent.choose_action(state, legal_idx)
+def play_one_game(verbose=True):
+    state = deal(leader=0)
+    void_flags = [[0]*4 for _ in range(4)]
+    done = False
 
-    else:  # Giocatore 3 euristica
-        action = HeuristicAgent.choose_action(state, legal_idx)
+    while not done:
+        seat = state.current_player
+        action = choose_action(seat, state, void_flags)
 
-    # Stampa la mossa
-    card = id_to_card(action)
-    print(f"Giocatore {seat} gioca {card}")
+        if verbose:
+            print(f"Giocatore {seat} ({PLAYERS[seat]}) gioca {id_to_card(action)}")
 
-    # Aggiorna flags e stato
-    update_void_flags(void_flags, state, seat, action)
-    state, rewards, done, info = step(state, action)
+        update_void_flags(void_flags, state, seat, action)
+        state, rewards, done, _ = step(state, action)
 
-print("=== Fine partita ===")
-print("Punteggio finale:")
-print(f"Team 0: {rewards[0]} punti")
-print(f"Team 1: {rewards[1]} punti")
+    if verbose:
+        print("=== Fine partita ===")
+        print(f"Team 0 (seat 0+2) → {rewards[0]} punti")
+        print(f"Team 1 (seat 1+3) → {rewards[1]} punti")
+        if rewards[0] > rewards[1]:
+            print("Vince TEAM 0")
+        elif rewards[1] > rewards[0]:
+            print("Vince TEAM 1")
+        else:
+            print("Pareggio!")
 
-if rewards[0] > rewards[1]:
-    print("Vince TEAM 0 (giocatori 0 e 2)")
-elif rewards[1] > rewards[0]:
-    print("Vince TEAM 1 (giocatori 1 e 3)")
-else:
-    print("Pareggio!")
+    return rewards
+
+# ================================
+# Main
+# ================================
+if __name__ == "__main__":
+    print("=== DEMO PARTITA SINGOLA ===")
+    play_one_game(verbose=True)
+
+    print("\n=== TORNEO SU 100 PARTITE ===")
+    N_MATCHES = 100
+    wins_team0 = wins_team1 = draws = 0
+
+    for _ in range(N_MATCHES):
+        rewards = play_one_game(verbose=False)
+        if rewards[0] > rewards[1]:
+            wins_team0 += 1
+        elif rewards[1] > rewards[0]:
+            wins_team1 += 1
+        else:
+            draws += 1
+
+    print(f"Team0 (seat 0+2: {PLAYERS[0]} + {PLAYERS[2]}) → vittorie: {wins_team0}/{N_MATCHES}")
+    print(f"Team1 (seat 1+3: {PLAYERS[1]} + {PLAYERS[3]}) → vittorie: {wins_team1}/{N_MATCHES}")
+    print(f"Pareggi: {draws}/{N_MATCHES}")

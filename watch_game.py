@@ -3,6 +3,7 @@
 # ================================
 import random
 import torch
+import time
 
 from game4p import deal, step, TEAM_OF_SEAT
 from obs.encoder import encode_state, update_void_flags
@@ -19,10 +20,10 @@ torch.manual_seed(SEED)
 
 # Decidi i giocatori (seat 0-3)
 # Opzioni: "dqn", "heuristic", "random"
-PLAYERS = ["dqn", "heuristic", "dqn", "heuristic"]
+PLAYERS = ["dqn", "dqn", "dqn", "dqn"]
 
 # Checkpoint per i DQN
-CKPT = "dqn_tressette_checkpoint_ep5000.pt"
+CKPT = "dqn_tressette_checkpoint_ep100000.pt"
 
 # Carica il modello DQN se serve
 policy = None
@@ -51,10 +52,20 @@ def choose_action(seat, state, void_flags):
         action = random.choice(legal_idx)
     return action
 
-def play_one_game(verbose=True):
-    state = deal(leader=0)
+
+def play_one_game(verbose=True, seed=None):
+    # genera un seed univoco se non passato
+    if seed is None:
+        seed = random.randrange(0, 2**32 - 1)
+    rng = random.Random(seed)
+
+    # deal con rng unico
+    state = deal(leader=rng.randint(0, 3), rng=rng)
     void_flags = [[0]*4 for _ in range(4)]
     done = False
+
+    if verbose:
+        print(f"[DEBUG] Seed partita: {seed}")
 
     while not done:
         seat = state.current_player
@@ -90,8 +101,8 @@ if __name__ == "__main__":
     N_MATCHES = 100
     wins_team0 = wins_team1 = draws = 0
 
-    for _ in range(N_MATCHES):
-        rewards = play_one_game(verbose=False)
+    for i in range(N_MATCHES):
+        rewards = play_one_game(verbose=False)  # seed diverso ogni volta
         if rewards[0] > rewards[1]:
             wins_team0 += 1
         elif rewards[1] > rewards[0]:

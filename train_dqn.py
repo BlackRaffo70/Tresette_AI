@@ -63,7 +63,7 @@ SEED = 42
 random.seed(SEED)
 torch.manual_seed(SEED)
 
-EPISODES = 100000
+EPISODES = 200000
 GAMMA = 0.99
 LR = 3e-4
 BATCH_SIZE = 512

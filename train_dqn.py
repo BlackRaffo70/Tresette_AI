@@ -317,4 +317,4 @@ if __name__ == "__main__":
     # Inserisci qui il checkpoint da cui riprendere
     CHECKPOINT = "dqn_tressette_checkpoint_ep100000.pt"
 
-    train(resume_from=none)
+    train(resume_from=None)

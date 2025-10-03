@@ -63,7 +63,7 @@ SEED = 42
 random.seed(SEED)
 torch.manual_seed(SEED)
 
-EPISODES = 400000
+EPISODES = 500000
 GAMMA = 0.99
 LR = 3e-4
 BATCH_SIZE = 512
@@ -79,7 +79,7 @@ CHECKPOINT_EVERY = 50000
 # DQN
 # ================================
 class DQNNet(nn.Module):
-    def __init__(self, input_dim: int, hidden: int = 512, n_actions: int = 40):
+    def __init__(self, input_dim: int, hidden: int = 256, n_actions: int = 40):
         super().__init__()
         self.fc1 = nn.Linear(input_dim, hidden)
         self.fc2 = nn.Linear(hidden, hidden)

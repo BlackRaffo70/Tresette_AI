@@ -1,5 +1,5 @@
 # ================================
-# File: train_dqn.py (GPU ready + Dense Reward)
+# File: train_dqn.py (GPU ready + Dense Reward + Resume 200k → 400k)
 # ================================
 from __future__ import annotations
 import os
@@ -63,23 +63,23 @@ SEED = 42
 random.seed(SEED)
 torch.manual_seed(SEED)
 
-EPISODES = 200000
+EPISODES = 400000
 GAMMA = 0.99
 LR = 3e-4
 BATCH_SIZE = 512
-REPLAY_CAP = 1_000_000
-TARGET_SYNC = 5000
+REPLAY_CAP = 5_000_000
+TARGET_SYNC = 2000
 EPS_START = 1.0
 EPS_END = 0.05
-EPS_DECAY_STEPS = 50_000
-PRINT_EVERY = 1000
-CHECKPOINT_EVERY = 10000
+EPS_DECAY_STEPS = 200_000
+PRINT_EVERY = 10000
+CHECKPOINT_EVERY = 50000
 
 # ================================
 # DQN
 # ================================
 class DQNNet(nn.Module):
-    def __init__(self, input_dim: int, hidden: int = 256, n_actions: int = 40):
+    def __init__(self, input_dim: int, hidden: int = 512, n_actions: int = 40):
         super().__init__()
         self.fc1 = nn.Linear(input_dim, hidden)
         self.fc2 = nn.Linear(hidden, hidden)
@@ -204,17 +204,10 @@ def train(resume_from: str | None = None):
             x, mask = encode_state(state, seat, void_flags)
             x, mask = x.to(DEVICE), mask.to(DEVICE)
 
-            # inizializza sempre epsilon
-            eps = epsilon(opt_steps)
-
-            seat = state.current_player
-            x, mask = encode_state(state, seat, void_flags)
-            x, mask = x.to(DEVICE), mask.to(DEVICE)
             eps = epsilon(opt_steps)
             legal_idx = torch.nonzero(mask[0]).view(-1).tolist()
             action = legal_idx[0] if legal_idx else 0
 
-            # policy
             if ep < 1000:
                 if random.random() < 0.7:
                     action = HeuristicAgent.choose_action(state, legal_idx)
@@ -240,10 +233,8 @@ def train(resume_from: str | None = None):
             prev_captures = {0: list(state.captures_team[0]), 1: list(state.captures_team[1])}
             next_state, rewards, done, _ = step(state, action)
 
-            # reward shaping denso
             r_shape = compute_reward(state, next_state, seat, action, prev_captures)
 
-            # reward finale solo a fine mano
             if done:
                 my_team = TEAM_OF_SEAT[seat]
                 other_team = 1 - my_team
@@ -256,13 +247,11 @@ def train(resume_from: str | None = None):
 
             r = r_shape + r_final
 
-            # push in replay buffer
             x_next, mask_next = encode_state(next_state, seat, void_flags)
             x_next, mask_next = x_next.to(DEVICE), mask_next.to(DEVICE)
             rb.push(x, mask, action, r, x_next, mask_next, float(done))
             state = next_state
 
-            # train DQN
             if len(rb) >= BATCH_SIZE:
                 s, m, a, r_b, s2, m2, d = rb.sample(BATCH_SIZE)
                 with amp_autocast():
@@ -309,12 +298,9 @@ def train(resume_from: str | None = None):
     }, "dqn_tressette_shared.pt")
     print("Salvato modello finale: dqn_tressette_shared.pt")
 
-
 # ================================
-# Entrypoint con resume fisso
+# Entrypoint con resume da checkpoint
 # ================================
 if __name__ == "__main__":
-    # Inserisci qui il checkpoint da cui riprendere
-    CHECKPOINT = "dqn_tressette_checkpoint_ep100000.pt"
-
-    train(resume_from=None)
+    CHECKPOINT = "dqn_tressette_checkpoint_ep200000.pt"
+    train(resume_from=CHECKPOINT)

@@ -14,16 +14,12 @@ from train_dqn import DQNNet, feature_dim, DEVICE
 # ================================
 # Setup
 # ================================
-SEED = 123
-random.seed(SEED)
-torch.manual_seed(SEED)
-
 # Decidi i giocatori (seat 0-3)
 # Opzioni: "dqn", "heuristic", "random"
-PLAYERS = ["dqn", "dqn", "dqn", "dqn"]
+PLAYERS = ["heuristic", "random", "heuristic", "random"]
 
 # Checkpoint per i DQN
-CKPT = "dqn_tressette_checkpoint_ep100000.pt"
+CKPT = "dqn_tressette_checkpoint_ep200000.pt"
 
 # Carica il modello DQN se serve
 policy = None
@@ -54,9 +50,10 @@ def choose_action(seat, state, void_flags):
 
 
 def play_one_game(verbose=True, seed=None):
-    # genera un seed univoco se non passato
+    # se non passo un seed, ne creo uno nuovo dal tempo (microsecondi)
     if seed is None:
-        seed = random.randrange(0, 2**32 - 1)
+        seed = int(time.time() * 1e6) % (2**32 - 1)
+
     rng = random.Random(seed)
 
     # deal con rng unico
@@ -97,8 +94,8 @@ if __name__ == "__main__":
     print("=== DEMO PARTITA SINGOLA ===")
     play_one_game(verbose=True)
 
-    print("\n=== TORNEO SU 100 PARTITE ===")
-    N_MATCHES = 100
+    print("\n=== TORNEO SU 1000 PARTITE ===")
+    N_MATCHES = 1000
     wins_team0 = wins_team1 = draws = 0
 
     for i in range(N_MATCHES):

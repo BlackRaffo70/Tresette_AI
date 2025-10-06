@@ -72,8 +72,8 @@ TARGET_SYNC = 2000
 EPS_START = 1.0
 EPS_END = 0.05
 EPS_DECAY_STEPS = 200_000
-PRINT_EVERY = 10000
-CHECKPOINT_EVERY = 50000
+PRINT_EVERY = 25000
+CHECKPOINT_EVERY = 25000
 
 # ================================
 # DQN
@@ -302,5 +302,5 @@ def train(resume_from: str | None = None):
 # Entrypoint con resume da checkpoint
 # ================================
 if __name__ == "__main__":
-    CHECKPOINT = "dqn_tressette_checkpoint_ep200000.pt"
+    CHECKPOINT = "dqn_tressette_checkpoint_ep250000.pt"
     train(resume_from=CHECKPOINT)

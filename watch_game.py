@@ -16,10 +16,10 @@ from train_dqn import DQNNet, feature_dim, DEVICE
 # ================================
 # Decidi i giocatori (seat 0-3)
 # Opzioni: "dqn", "heuristic", "random"
-PLAYERS = ["heuristic", "random", "heuristic", "random"]
+PLAYERS = ["dqn", "random", "dqn", "random"]
 
 # Checkpoint per i DQN
-CKPT = "dqn_tressette_checkpoint_ep200000.pt"
+CKPT = "dqn_tressette_checkpoint_ep250000.pt"
 
 # Carica il modello DQN se serve
 policy = None

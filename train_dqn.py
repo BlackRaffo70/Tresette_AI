@@ -72,8 +72,8 @@ TARGET_SYNC = 2000
 EPS_START = 1.0
 EPS_END = 0.05
 EPS_DECAY_STEPS = 200_000
-PRINT_EVERY = 25000
-CHECKPOINT_EVERY = 25000
+PRINT_EVERY = 5000
+CHECKPOINT_EVERY = 1000
 
 # ================================
 # DQN
@@ -282,6 +282,18 @@ def train(resume_from: str | None = None):
         if ep % CHECKPOINT_EVERY == 0:
             ckpt_file = f"dqn_tressette_checkpoint_ep{ep}.pt"
             rb_file = f"dqn_tressette_checkpoint_ep{ep}.pkl"
+
+            # Rimuovi i vecchi checkpoint per non saturare lo spazio,
+            # ma non cancellare quelli che stai per scrivere
+            for f in os.listdir("."):
+                if (
+                        f.startswith("dqn_tressette_checkpoint_ep")
+                        and (f.endswith(".pt") or f.endswith(".pkl"))
+                        and f not in [ckpt_file, rb_file]
+                ):
+                    os.remove(f)
+
+            # Salva nuovo checkpoint
             torch.save({
                 "model": policy.state_dict(),
                 "target": target.state_dict(),
@@ -289,8 +301,9 @@ def train(resume_from: str | None = None):
                 "episode": ep,
                 "config": {"in_dim": in_dim, "hidden": 256}
             }, ckpt_file)
+
             torch.save(list(rb.buf), rb_file)
-            print(f"[ep {ep}] checkpoint salvato: {ckpt_file}")
+            print(f"[ep {ep}] checkpoint aggiornato: {ckpt_file}")
 
     torch.save({
         "model": policy.state_dict(),

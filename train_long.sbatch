@@ -13,4 +13,4 @@
 
 cd /scratch.hpc/raffaele.neri2/Tresette_AI
 source /scratch.hpc/raffaele.neri2/venv/bin/activate
-python train_dqn.py
+python -u train_dqn.py

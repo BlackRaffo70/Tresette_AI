@@ -67,13 +67,13 @@ EPISODES = 500000
 GAMMA = 0.99
 LR = 3e-4
 BATCH_SIZE = 512
-REPLAY_CAP = 5_000_000
+REPLAY_CAP = 1_000_000
 TARGET_SYNC = 2000
 EPS_START = 1.0
 EPS_END = 0.05
 EPS_DECAY_STEPS = 200_000
 PRINT_EVERY = 5000
-CHECKPOINT_EVERY = 1000
+CHECKPOINT_EVERY = 15000
 
 # ================================
 # DQN
@@ -305,6 +305,14 @@ def train(resume_from: str | None = None):
             torch.save(list(rb.buf), rb_file)
             print(f"[ep {ep}] checkpoint aggiornato: {ckpt_file}")
 
+            # Ogni 15k episodi salva e svuota il replay buffer
+            if ep % 15000 == 0:
+                replay_file = f"dqn_tressette_replay_ep{ep}.pkl"
+                torch.save(list(rb.buf), replay_file)
+                print(f"[ep {ep}] 💾 Replay buffer salvato ({len(rb)} transizioni).")
+                rb.buf.clear()
+                print(f"[ep {ep}] 🧹 Replay buffer svuotato.")
+
     torch.save({
         "model": policy.state_dict(),
         "config": {"in_dim": in_dim, "hidden": 256}
@@ -315,5 +323,5 @@ def train(resume_from: str | None = None):
 # Entrypoint con resume da checkpoint
 # ================================
 if __name__ == "__main__":
-    CHECKPOINT = "dqn_tressette_checkpoint_ep250000.pt"
+    CHECKPOINT = "dqn_tressette_checkpoint_ep351000.pt"
     train(resume_from=CHECKPOINT)

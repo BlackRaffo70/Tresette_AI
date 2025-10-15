@@ -63,7 +63,7 @@ SEED = 42
 random.seed(SEED)
 torch.manual_seed(SEED)
 
-EPISODES = 500000
+EPISODES = 700000
 GAMMA = 0.99
 LR = 3e-4
 BATCH_SIZE = 512
@@ -72,7 +72,7 @@ TARGET_SYNC = 2000
 EPS_START = 1.0
 EPS_END = 0.05
 EPS_DECAY_STEPS = 200_000
-PRINT_EVERY = 5000
+PRINT_EVERY = 15000
 CHECKPOINT_EVERY = 15000
 
 # ================================
@@ -313,15 +313,15 @@ def train(resume_from: str | None = None):
                 rb.buf.clear()
                 print(f"[ep {ep}] 🧹 Replay buffer svuotato.")
 
-    torch.save({
-        "model": policy.state_dict(),
-        "config": {"in_dim": in_dim, "hidden": 256}
-    }, "dqn_tressette_shared.pt")
-    print("Salvato modello finale: dqn_tressette_shared.pt")
+        torch.save({
+            "model": policy.state_dict(),
+            "config": {"in_dim": in_dim, "hidden": 256}
+        }, f"dqn_tressette_ep{ep}.pt")
+        print(f"Salvato modello finale: dqn_tressette_ep{ep}.pt")
 
 # ================================
 # Entrypoint con resume da checkpoint
 # ================================
 if __name__ == "__main__":
-    CHECKPOINT = "dqn_tressette_shared.pt"
+    CHECKPOINT = "dqn_tressette_checkpoint_ep500000.pt"
     train(resume_from=CHECKPOINT)

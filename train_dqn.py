@@ -322,7 +322,7 @@ def train(resume_from: str | None = None):
 # Entrypoint con resume da checkpoint
 # ================================
 if __name__ == "__main__":
-    CHECKPOINT = "dqn_tressette_checkpoint_ep500000.pt"
+    CHECKPOINT = "dqn_tressette_checkpoint_ep390000.pt"
     train(resume_from=CHECKPOINT)
 
 

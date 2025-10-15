@@ -305,8 +305,8 @@ def train(resume_from: str | None = None):
                 torch.save(list(rb.buf), rb_file)
                 print(f"[ep {ep}] ✅ Checkpoint aggiornato: {ckpt_file}")
 
-# Fine training → salva modello finale
-    final_model = f"dqn_tressette_ep{ep}.pt"
+    # Fine training → salva modello finale
+    final_model = f"dqn_tressette_ep{EPISODES}.pt"
     torch.save({
         "model": policy.state_dict(),
         "config": {"in_dim": in_dim, "hidden": 256}

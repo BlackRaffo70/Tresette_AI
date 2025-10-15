@@ -305,13 +305,13 @@ def train(resume_from: str | None = None):
                 torch.save(list(rb.buf), rb_file)
                 print(f"[ep {ep}] ✅ Checkpoint aggiornato: {ckpt_file}")
 
-        # Fine training → salva modello finale
-        final_model = f"dqn_tressette_ep{ep}.pt"
-        torch.save({
-            "model": policy.state_dict(),
-            "config": {"in_dim": in_dim, "hidden": 256}
-        }, final_model)
-        print(f"🏁 Training completato. Modello finale salvato: {final_model}")
+# Fine training → salva modello finale
+    final_model = f"dqn_tressette_ep{ep}.pt"
+    torch.save({
+        "model": policy.state_dict(),
+        "config": {"in_dim": in_dim, "hidden": 256}
+    }, final_model)
+    print(f"🏁 Training completato. Modello finale salvato: {final_model}")
 
 # ================================
 # Entrypoint con resume da checkpoint
@@ -319,4 +319,5 @@ def train(resume_from: str | None = None):
 if __name__ == "__main__":
     CHECKPOINT = "dqn_tressette_checkpoint_ep500000.pt"
     train(resume_from=CHECKPOINT)
+
 

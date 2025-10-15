@@ -185,7 +185,12 @@ def train(resume_from: str | None = None):
     if resume_from and os.path.exists(resume_from):
         checkpoint = torch.load(resume_from, map_location=DEVICE)
         policy.load_state_dict(checkpoint["model"])
-        target.load_state_dict(checkpoint["target"])
+
+        if "target" in checkpoint:
+            target.load_state_dict(checkpoint["target"])
+        else:
+            target.load_state_dict(checkpoint["model"])  # fallback
+
         opt_steps = checkpoint.get("opt_steps", 0)
         start_ep = checkpoint.get("episode", 0) + 1
         rb_path = resume_from.replace(".pt", ".pkl")

@@ -279,45 +279,39 @@ def train(resume_from: str | None = None):
             print(f"[ep {ep}] replay={len(rb)} opt_steps={opt_steps} eps={eps:.3f} "
                   f"hands={total_hands} avg_final_reward={avg_final_reward:.2f}")
 
-        if ep % CHECKPOINT_EVERY == 0:
-            ckpt_file = f"dqn_tressette_checkpoint_ep{ep}.pt"
-            rb_file = f"dqn_tressette_checkpoint_ep{ep}.pkl"
+            # Salvataggio checkpoint periodico
+            if ep % CHECKPOINT_EVERY == 0:
+                ckpt_file = f"dqn_tressette_checkpoint_ep{ep}.pt"
+                rb_file = f"dqn_tressette_checkpoint_ep{ep}.pkl"
 
-            # Rimuovi i vecchi checkpoint per non saturare lo spazio,
-            # ma non cancellare quelli che stai per scrivere
-            for f in os.listdir("."):
-                if (
-                        f.startswith("dqn_tressette_checkpoint_ep")
-                        and (f.endswith(".pt") or f.endswith(".pkl"))
-                        and f not in [ckpt_file, rb_file]
-                ):
-                    os.remove(f)
+                # Rimuovi i vecchi checkpoint per non saturare lo spazio
+                for f in os.listdir("."):
+                    if (
+                            f.startswith("dqn_tressette_checkpoint_ep")
+                            and (f.endswith(".pt") or f.endswith(".pkl"))
+                            and f not in [ckpt_file, rb_file]
+                    ):
+                        os.remove(f)
 
-            # Salva nuovo checkpoint
-            torch.save({
-                "model": policy.state_dict(),
-                "target": target.state_dict(),
-                "opt_steps": opt_steps,
-                "episode": ep,
-                "config": {"in_dim": in_dim, "hidden": 256}
-            }, ckpt_file)
+                # Salva nuovo checkpoint
+                torch.save({
+                    "model": policy.state_dict(),
+                    "target": target.state_dict(),
+                    "opt_steps": opt_steps,
+                    "episode": ep,
+                    "config": {"in_dim": in_dim, "hidden": 256}
+                }, ckpt_file)
 
-            torch.save(list(rb.buf), rb_file)
-            print(f"[ep {ep}] checkpoint aggiornato: {ckpt_file}")
+                torch.save(list(rb.buf), rb_file)
+                print(f"[ep {ep}] ✅ Checkpoint aggiornato: {ckpt_file}")
 
-            # Ogni 15k episodi salva e svuota il replay buffer
-            if ep % 15000 == 0:
-                replay_file = f"dqn_tressette_replay_ep{ep}.pkl"
-                torch.save(list(rb.buf), replay_file)
-                print(f"[ep {ep}] 💾 Replay buffer salvato ({len(rb)} transizioni).")
-                rb.buf.clear()
-                print(f"[ep {ep}] 🧹 Replay buffer svuotato.")
-
+        # Fine training → salva modello finale
+        final_model = f"dqn_tressette_ep{ep}.pt"
         torch.save({
             "model": policy.state_dict(),
             "config": {"in_dim": in_dim, "hidden": 256}
-        }, f"dqn_tressette_ep{ep}.pt")
-        print(f"Salvato modello finale: dqn_tressette_ep{ep}.pt")
+        }, final_model)
+        print(f"🏁 Training completato. Modello finale salvato: {final_model}")
 
 # ================================
 # Entrypoint con resume da checkpoint
@@ -325,3 +319,4 @@ def train(resume_from: str | None = None):
 if __name__ == "__main__":
     CHECKPOINT = "dqn_tressette_checkpoint_ep500000.pt"
     train(resume_from=CHECKPOINT)
+

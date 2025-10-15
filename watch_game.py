@@ -14,8 +14,8 @@ from train_dqn import DQNNet, feature_dim, DEVICE
 # ================================
 # Setup
 # ================================
-PLAYERS = ["dqn", "random", "dqn", "heuristic"]
-CKPT = "dqn_tressette_checkpoint_ep343000.pt"
+PLAYERS = ["dqn", "random", "dqn", "random"]
+CKPT = "dqn_tressette_shared.pt"
 
 policy = None
 if "dqn" in PLAYERS:
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     print("=== DEMO PARTITA SINGOLA ===")
     play_one_game(verbose=True)
 
-    N_MATCHES = 100
+    N_MATCHES = 1000
     wins_team0 = wins_team1 = draws = 0
 
     print(f"\n=== TORNEO SU {N_MATCHES} PARTITE ===")

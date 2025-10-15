@@ -213,7 +213,7 @@ def train(resume_from: str | None = None):
                     action = HeuristicAgent.choose_action(state, legal_idx)
                 else:
                     action = random.choice(legal_idx)
-            elif ep < 10000:
+            elif ep < 600000:
                 action = HeuristicAgent.choose_action(state, legal_idx)
             else:
                 if random.random() < eps:
@@ -323,5 +323,5 @@ def train(resume_from: str | None = None):
 # Entrypoint con resume da checkpoint
 # ================================
 if __name__ == "__main__":
-    CHECKPOINT = "dqn_tressette_checkpoint_ep351000.pt"
+    CHECKPOINT = "dqn_tressette_shared.pt"
     train(resume_from=CHECKPOINT)

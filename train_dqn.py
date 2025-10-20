@@ -85,7 +85,7 @@ class DQNNet(nn.Module):
         self.fc2 = nn.Linear(hidden, hidden)
         self.out = nn.Linear(hidden, n_actions)
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
+    def forward(self, x:     torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
         h = F.relu(self.fc1(x))
         h = F.relu(self.fc2(h))
         q = self.out(h)

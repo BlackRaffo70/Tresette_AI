@@ -53,7 +53,6 @@ def choose_action_batch(states, void_flags_batch):
 
 
 def play_many_games(n_matches=N_MATCHES, batch_size=BATCH_SIZE):
-    """Gioca più partite in parallelo"""
     wins_team0 = wins_team1 = draws = 0
     all_seeds = [int(time.time() * 1e6) % (2**32 - 1) + i for i in range(n_matches)]
 

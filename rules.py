@@ -14,9 +14,10 @@ TEAM_OF_SEAT = {0: 0, 2: 0, 1: 1, 3: 1}
 @dataclass
 class Trick:
     """Rappresenta una presa (trick), parziale o completa.
+    ""TRICK =1 GIRO DI GIOCATE -> NON 1 PARTITA""
 
     Attributi:
-      - leader: seat che ha aperto la presa
+      - leader: seat che ha aperto la presa, ultimo che prende
       - plays: lista di tuple (seat, card_id) in ordine di gioco
     """
     leader: int
@@ -37,6 +38,10 @@ class Trick:
         Vince la carta più forte del seme di uscita.
         """
         assert self.is_complete(), "Trick incompleto"
+
+        """assert = verifica automatica (una specie di “freno di emergenza”) che serve a controllare se una condizione è vera —
+e se non lo è, il programma si ferma subito e genera un’eccezione """
+
         suit = self.lead_suit()
         best_seat, best_card = self.plays[0]
         best_strength = id_to_card(best_card).strength

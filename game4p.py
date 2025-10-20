@@ -50,6 +50,7 @@ def deal(rng: random.Random | None = None, leader: int = 0) -> GameState:
 
 def step(state: GameState, card_id: int) -> Tuple[GameState, Dict[int,int], bool, Dict]:
     """Esegue una giocata dal giocatore corrente e calcola eventuali segnali."""
+    "p= sarà l'indice del giocatore"""
     p = state.current_player
 
     if card_id not in state.hands[p]:

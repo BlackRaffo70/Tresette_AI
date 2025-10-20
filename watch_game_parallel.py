@@ -91,7 +91,7 @@ def play_many_games(n_matches=N_MATCHES, batch_size=BATCH_SIZE):
     print("\n=== RISULTATI FINALI ===")
     print(f"Team0 (seat 0+2: {PLAYERS[0]} + {PLAYERS[2]}) → {wins_team0}/{n_matches}")
     print(f"Team1 (seat 1+3: {PLAYERS[1]} + {PLAYERS[3]}) → {wins_team1}/{n_matches}")
-    print(f"Pareggi: {draws}/{n_matches}")
+
 
 
 if __name__ == "__main__":

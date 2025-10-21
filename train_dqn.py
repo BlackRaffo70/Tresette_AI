@@ -63,22 +63,25 @@ SEED = 42
 random.seed(SEED)
 torch.manual_seed(SEED)
 
-EPISODES = 700000
-GAMMA = 0.99
-LR = 3e-4
-BATCH_SIZE = 512
-REPLAY_CAP = 1_000_000
-TARGET_SYNC = 2000
-EPS_START = 1.0
-EPS_END = 0.05
-EPS_DECAY_STEPS = 200_000
+EPISODES = 700000 #Dovrebbero bastare per superare heuristics, servirebbe spingere a 2M
+GAMMA = 0.99 #Vicino a 1 per una visione a lungo termine -> Non vincere la mano ma la partita
+LR = 3e-4 #Precisione, abbastanza preciso ma non instabile
+BATCH_SIZE = 512 #Esperienze estratte dal replay buffer ad ogni update
+REPLAY_CAP = 1_000_000 #Capacità replay buffer
+TARGET_SYNC = 2000 #Frequenza aggiornamento target network
+EPS_START = 1.0 #Epsilon Iniziale -> mosse casuali
+EPS_END = 0.05 #Epsilon Finale -> determinismo
+EPS_DECAY_STEPS = 200_000 #Episodi per andare da inizio a fine
 PRINT_EVERY = 15000
 CHECKPOINT_EVERY = 15000
 
 # ================================
 # DQN
 # ================================
+"Creo rete DQN - Funzioni base - feature dim in base a numero carte ,trick ecc -forward = propagazione in avanti"
+"Replay, per coda che elimina le memorie più datate"
 class DQNNet(nn.Module):
+    "Double layer + layer output"
     def __init__(self, input_dim: int, hidden: int = 256, n_actions: int = 40):
         super().__init__()
         self.fc1 = nn.Linear(input_dim, hidden)
@@ -174,18 +177,20 @@ def train(resume_from: str | None = None):
     target.eval()
 
     opt = optim.Adam(policy.parameters(), lr=LR)
+    "Creo replay buffer"
     rb = Replay(REPLAY_CAP)
     opt_steps = 0
     start_ep = 1
-
+    "Memorizzo i reward finali"
     reward_history = []
     total_tricks = 0
     total_hands = 0
 
+    "Resume da checkpoint"
     if resume_from and os.path.exists(resume_from):
         checkpoint = torch.load(resume_from, map_location=DEVICE)
         policy.load_state_dict(checkpoint["model"])
-
+        "Nel caso esistono, carichiamo i pesi"
         if "target" in checkpoint:
             target.load_state_dict(checkpoint["target"])
         else:
@@ -199,20 +204,27 @@ def train(resume_from: str | None = None):
         print(f"Ripreso training da episodio {start_ep}, opt_steps={opt_steps}, replay={len(rb)}")
 
     for ep in range(start_ep, EPISODES + 1):
+        "Applico funzione deal per assegnare le carte"
         state = deal(leader=ep % 4)
+        "Flag per i semi che i giocatori non hanno"
         void_flags = [[0]*4 for _ in range(4)]
         reward_log = []
         done = False
 
         while not done:
+            "Recuperiamo player corrente"
             seat = state.current_player
+            "Da stato a tensore Pytorch"
             x, mask = encode_state(state, seat, void_flags)
             x, mask = x.to(DEVICE), mask.to(DEVICE)
 
+            "Epsilon attuale , da 1 a valore baasso, es potremmo mettere 0.05, quando si abbassa non sto più esplorando ma gioco in maniera deterministica"
             eps = epsilon(opt_steps)
+            "Solita maschera azione legali"
             legal_idx = torch.nonzero(mask[0]).view(-1).tolist()
             action = legal_idx[0] if legal_idx else 0
 
+            "Scelgo politica training"
             if ep < 1000:
                 if random.random() < 0.7:
                     action = HeuristicAgent.choose_action(state, legal_idx)
@@ -224,12 +236,14 @@ def train(resume_from: str | None = None):
                 if random.random() < eps:
                     action = random.choice(legal_idx)
                 else:
+                    "Nel caso scelgo Q-Value più alto"
                     with torch.no_grad():
                         q = policy(x, mask).squeeze(0)
                         q_legal = q[legal_idx]
                         best_idx = torch.argmax(q_legal).item()
                         action = legal_idx[best_idx]
 
+            "Fallback"
             if action not in legal_idx:
                 print(f"[WARNING] Azione {action} non valida per giocatore {seat}. Legal idx: {legal_idx}")
                 action = random.choice(legal_idx)
@@ -238,8 +252,10 @@ def train(resume_from: str | None = None):
             prev_captures = {0: list(state.captures_team[0]), 1: list(state.captures_team[1])}
             next_state, rewards, done, _ = step(state, action)
 
+            "Calcolo reward"
             r_shape = compute_reward(state, next_state, seat, action, prev_captures)
 
+            "Calcolo punti finale "
             if done:
                 my_team = TEAM_OF_SEAT[seat]
                 other_team = 1 - my_team
@@ -252,11 +268,13 @@ def train(resume_from: str | None = None):
 
             r = r_shape + r_final
 
+            "Creo transazioni e le aggiungo al replay buffer"
             x_next, mask_next = encode_state(next_state, seat, void_flags)
             x_next, mask_next = x_next.to(DEVICE), mask_next.to(DEVICE)
             rb.push(x, mask, action, r, x_next, mask_next, float(done))
             state = next_state
 
+            "Calcolo Q"
             if len(rb) >= BATCH_SIZE:
                 s, m, a, r_b, s2, m2, d = rb.sample(BATCH_SIZE)
                 with amp_autocast():
@@ -266,6 +284,7 @@ def train(resume_from: str | None = None):
                         y = r_b + (1.0 - d) * GAMMA * q2
                     loss = F.mse_loss(q, y)
 
+                "Aggiornamento parametri"
                 opt.zero_grad()
                 scaler.scale(loss).backward()
                 scaler.unscale_(opt)
@@ -279,6 +298,7 @@ def train(resume_from: str | None = None):
 
         total_hands += 1
 
+        "Print finali"
         if ep % PRINT_EVERY == 0:
             avg_final_reward = sum(reward_history) / len(reward_history) if reward_history else 0.0
             print(f"[ep {ep}] replay={len(rb)} opt_steps={opt_steps} eps={eps:.3f} "

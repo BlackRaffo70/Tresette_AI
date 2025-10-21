@@ -50,7 +50,7 @@ def deal(rng: random.Random | None = None, leader: int = 0) -> GameState:
 
 def step(state: GameState, card_id: int) -> Tuple[GameState, Dict[int,int], bool, Dict]:
     """Esegue una giocata dal giocatore corrente e calcola eventuali segnali."""
-    "p= sarà l'indice del giocatore"""
+    "p= sarà l'indice del giocatore"
     p = state.current_player
 
     if card_id not in state.hands[p]:
@@ -95,7 +95,7 @@ def step(state: GameState, card_id: int) -> Tuple[GameState, Dict[int,int], bool
         ns.current_player = (p + 1) % 4
         return ns, rewards, False, info #Se non hanno giocato tutti la carte ritorna False che nel menù ci darà break
 
-    # Altrimenti la presa è completa → determina vincitore
+    # Altrimenti la presa è completa -> determina vincitore
     winner = ns.trick.winner()
     ns.last_trick_winner = winner
     taken = [cid for _, cid in ns.trick.plays]

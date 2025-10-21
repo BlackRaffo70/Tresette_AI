@@ -106,17 +106,21 @@ class Replay:
     def push(self, s, m, a, r, s_next, m_next, done):
         self.buf.append((s.detach(), m.detach(), a, r, s_next.detach(), m_next.detach(), done))
 
-    def sample(self, B):
-        batch = random.sample(self.buf, B)
-        s, m, a, r, s2, m2, d = zip(*batch)
-        s  = torch.cat(s, dim=0).to(DEVICE)
-        m  = torch.cat(m, dim=0).to(DEVICE)
-        a  = torch.tensor(a, dtype=torch.long, device=DEVICE).unsqueeze(1)
-        r  = torch.tensor(r, dtype=torch.float32, device=DEVICE).unsqueeze(1)
-        s2 = torch.cat(s2, dim=0).to(DEVICE)
-        m2 = torch.cat(m2, dim=0).to(DEVICE)
-        d  = torch.tensor(d, dtype=torch.float32, device=DEVICE).unsqueeze(1)
-        return s, m, a, r, s2, m2, d
+    ""
+
+    def sample(self, B):  # Estrae un mini-batch casuale di B esperienze dal replay buffer
+        batch = random.sample(self.buf, B)  # Seleziona B tuple casuali dal buffer (decorrelazione temporale)
+        s, m, a, r, s2, m2, d = zip(
+            *batch)  # Divide il batch in 7 liste: stati, maschere, azioni, reward, next state, next mask, done
+        s = torch.cat(s, dim=0).to(DEVICE)  # Unisce tutti gli stati in un tensore [B, N] e li sposta su GPU/CPU
+        m = torch.cat(m, dim=0).to(DEVICE)  # Unisce tutte le maschere di azione e le sposta su GPU/CPU
+        a = torch.tensor(a, dtype=torch.long, device=DEVICE).unsqueeze(1)  # Converte le azioni in tensore intero [B,1]
+        r = torch.tensor(r, dtype=torch.float32, device=DEVICE).unsqueeze(1)  # Converte i reward in tensore float [B,1]
+        s2 = torch.cat(s2, dim=0).to(DEVICE)  # Unisce tutti gli stati successivi e li porta su GPU/CPU
+        m2 = torch.cat(m2, dim=0).to(DEVICE)  # Unisce tutte le maschere successive e le porta su GPU/CPU
+        d = torch.tensor(d, dtype=torch.float32, device=DEVICE).unsqueeze(
+            1)  # Converte i flag done (episodio finito = 1) in tensore float [B,1]
+        return s, m, a, r, s2, m2, d  # Restituisce tutti i tensori del batch pronti per l’aggiornamento DQN
 
     def __len__(self):
         return len(self.buf)

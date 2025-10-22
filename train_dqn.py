@@ -82,12 +82,15 @@ CHECKPOINT_EVERY = 15000
 "Replay, per coda che elimina le memorie più datate"
 class DQNNet(nn.Module):
     "Double layer + layer output"
+    "Layer = Strato di neuroni, 1 Layer per estrazione + secondo combinazione feature"
     def __init__(self, input_dim: int, hidden: int = 256, n_actions: int = 40):
         super().__init__()
         self.fc1 = nn.Linear(input_dim, hidden)
         self.fc2 = nn.Linear(hidden, hidden)
         self.out = nn.Linear(hidden, n_actions)
 
+
+    "Forward = Cuore -> Capisce i pattern, stima Q-Values e può essere usato per decisioni o addestramento dato che genera i Q Values"
     def forward(self, x:     torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
         h = F.relu(self.fc1(x))
         h = F.relu(self.fc2(h))
@@ -106,7 +109,21 @@ class Replay:
     def push(self, s, m, a, r, s_next, m_next, done):
         self.buf.append((s.detach(), m.detach(), a, r, s_next.detach(), m_next.detach(), done))
 
-    ""
+    # Ogni elemento salvato nel replay buffer è una tupla con 7 campi:
+    # (
+    #   s,        # stato corrente (torch.Tensor): rappresentazione numerica dell'ambiente osservato dal giocatore
+    #   m,        # maschera azioni legali (torch.Tensor): 1 dove la carta è giocabile, 0 dove non lo è
+    #   a,        # azione eseguita (int): indice della carta giocata dal giocatore
+    #   r,        # reward immediato (float): punteggio ottenuto dopo aver eseguito l’azione
+    #   s_next,   # stato successivo (torch.Tensor): nuova osservazione dell’ambiente dopo la mossa
+    #   m_next,   # maschera azioni legali nello stato successivo (torch.Tensor)
+    #   done      # flag di terminazione (float)
+    # )
+    #
+    # Queste tuple rappresentano esperienze complete di tipo (s, a, r, s_next, done),
+    # con l'aggiunta delle maschere m e m_next per indicare le azioni consentite.
+    # Il replay buffer funge da memoria circolare per riutilizzare esperienze passate
+    # durante l’addestramento e ridurre la correlazione temporale tra i dati.
 
     def sample(self, B):  # Estrae un mini-batch casuale di B esperienze dal replay buffer
         batch = random.sample(self.buf, B)  # Seleziona B tuple casuali dal buffer (decorrelazione temporale)

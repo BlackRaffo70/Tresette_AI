@@ -27,6 +27,7 @@ if "dqn" in PLAYERS:
 # ================================
 # Funzioni
 # ================================
+"Policy per avversario"
 def choose_action(seat, state, void_flags):
     player_type = PLAYERS[seat]
     x, mask = encode_state(state, seat, void_flags)
@@ -44,12 +45,15 @@ def choose_action(seat, state, void_flags):
     return action
 
 
+"Simulazione una partita"
 def play_one_game(verbose=True, seed=None):
     if seed is None:
         seed = int(time.time() * 1e6) % (2**32 - 1)
     rng = random.Random(seed)
 
+    "Assegnazione carte"
     state = deal(leader=rng.randint(0, 3), rng=rng)
+    "Matrice 4*4 di 0 per tenere conto dei semi mancanti degli avversari"
     void_flags = [[0]*4 for _ in range(4)]
     done = False
 

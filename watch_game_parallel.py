@@ -20,6 +20,8 @@ CKPT = "dqn_tressette_checkpoint_ep690000.pt"  # checkpoint da usare
 N_MATCHES = 16384  # quante partite in totale
 BATCH_SIZE = 32  # quante partite simultanee
 
+"Faciamo tutti i forward pass in parallelo, creazione ambiente, step e calcolo risultati sempre su cpu"
+
 # ================================
 # MODELLO
 # ================================
@@ -35,7 +37,8 @@ print(f"💻 Device attivo: {DEVICE}")
 # FUNZIONI
 # ================================
 def choose_action_batch(states, void_flags_batch):
-    """Calcola le azioni per un batch di stati (tutti seat correnti)"""
+    "Ci serve per gestire le scelte di più partite in contemporanea"
+    "Calcola le azioni per un batch di stati (tutti seat correnti)"
     x_list, mask_list = [], []
     for s, void_flags in zip(states, void_flags_batch):
         seat = s.current_player
@@ -45,6 +48,7 @@ def choose_action_batch(states, void_flags_batch):
     x = torch.cat(x_list, dim=0).to(DEVICE)
     mask = torch.cat(mask_list, dim=0).to(DEVICE)
 
+    "Calcoliamo tutti i Q-Values in parallelo"
     with torch.no_grad():
         q = policy(x, mask)
         q = q.masked_fill(mask == 0, -1e9)
@@ -52,6 +56,7 @@ def choose_action_batch(states, void_flags_batch):
     return actions
 
 
+"Versione play_one_game adatTata per GPU, utilizziamo batch per gestire più partite in contemporanea"
 def play_many_games(n_matches=N_MATCHES, batch_size=BATCH_SIZE):
     wins_team0 = wins_team1 = draws = 0
     all_seeds = [int(time.time() * 1e6) % (2**32 - 1) + i for i in range(n_matches)]

@@ -55,11 +55,11 @@ python train_dqn.py
 
 Il sistema è strutturato come un classico ambiente di **Reinforcement Learning**:  
 
-| 🧠 **Agente** | Decide le mosse usando una `ε-greedy policy`. |
-| 🎮 **Ambiente** | Simula lo stato della partita (mani, prese, turno, carte giocate). |
-| 🪙 **Reward shaping** | Ricompense intermedie per prese utili e penalità per errori. |
-| 🧩 **Rete neurale (DQN)** | Stima i valori Q e apprende la policy ottimale. |
-| 🔁 **Replay Buffer** | Memorizza esperienze passate per stabilizzare l’apprendimento. |
+| 🧠 Agente | Decide le mosse usando una `ε-greedy policy`. |
+| 🎮 Ambiente | Simula lo stato della partita (mani, prese, turno, carte giocate). |
+| 🪙 Reward shaping | Ricompense intermedie per prese utili e penalità per errori. |
+| 🧩 Rete neurale (DQN) | Stima i valori Q e apprende la policy ottimale. |
+| 🔁 Replay Buffer | Memorizza esperienze passate per stabilizzare l’apprendimento. |
 ---
 
 ## 📂 Struttura del progetto

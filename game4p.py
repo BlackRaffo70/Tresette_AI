@@ -106,6 +106,7 @@ def step(state: GameState, card_id: int) -> Tuple[GameState, Dict[int,int], bool
     ns.trick = Trick(winner, [])
     ns.current_player = winner
 
+    #A partita completa
     if ns.tricks_played == 10:
         last_team = TEAM_OF_SEAT[ns.last_trick_winner] if ns.last_trick_winner is not None else None
         t0 = score_team_from_captures(ns.captures_team[0], last_team == 0)
@@ -117,6 +118,6 @@ def step(state: GameState, card_id: int) -> Tuple[GameState, Dict[int,int], bool
     return ns, rewards, False, info
 
 def legal_action_mask(state: GameState) -> List[int]:
-    """Ritorna una maschera binaria (40 elementi)."""
+    """Ritorna una maschera binaria (40 elementi). Solo carte valide"""
     la = set(legal_actions(state.hands[state.current_player], state.trick))
     return [1 if cid in la else 0 for cid in range(40)]

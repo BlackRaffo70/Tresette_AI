@@ -21,7 +21,7 @@ def print_hand(seat: int, hand: list[int]):
 # ================================
 
 "Caricare il modello pt da utilizzare"
-dqn_model = "dqn_tressette_checkpoint_ep690000.pt"
+CKPT = "dqn_tressette_checkpoint_ep690000.pt"
 def play_human_vs_random(seed: int = 0, human_seat: int = 0):
     #Genero il mazzo e assegno le carte tramite funzione deal di cards
     rng = random.Random(seed)
@@ -156,7 +156,7 @@ def main_menu():
             play_human_vs_ai(mode="heuristic", human_seat=seat)
         elif scelta == "3":
             seat = int(input("Scegli il tuo seat (0-3): "))
-            play_human_vs_ai(mode="dqn", ckpt_path=dqn_model, human_seat=seat)
+            play_human_vs_ai(mode="dqn", ckpt_path=CKPT, human_seat=seat)
         elif scelta == "0":
             print("Arrivederci!")
             break

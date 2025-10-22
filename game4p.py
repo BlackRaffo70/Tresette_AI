@@ -21,7 +21,7 @@ class GameState: #rappresenta la mano attuale
     signals: Dict[int, Dict]  # seat -> {suit, signal}
 
     def clone(self) -> GameState: #crea uno stato clone indipendente da quello originale
-        """Crea una copia indipendente dello stato."""
+        "Crea una copia indipendente dello stato."
         return GameState(
             hands=[h.copy() for h in self.hands],
             current_player=self.current_player,
@@ -49,10 +49,13 @@ def deal(rng: random.Random | None = None, leader: int = 0) -> GameState:
     )
 
 def step(state: GameState, card_id: int) -> Tuple[GameState, Dict[int,int], bool, Dict]:
-    """Esegue una giocata dal giocatore corrente e calcola eventuali segnali."""
+    "Restituirà nuova Gamestate, booleano per check partita finita, info "
+
+    "Esegue una giocata dal giocatore corrente e calcola eventuali segnali."
     "p= sarà l'indice del giocatore"
     p = state.current_player
 
+    "Debug"
     if card_id not in state.hands[p]:
         print("DEBUG ERRORE → seat:", p,
               "action:", card_id,
@@ -63,13 +66,17 @@ def step(state: GameState, card_id: int) -> Tuple[GameState, Dict[int,int], bool
         f"[ERRORE STEP] Carta {card_id} non in mano al giocatore {p}. "
         f"Mano attuale: {state.hands[p]}"
     )
+
+    "Machera carte legali"
     la = legal_actions(state.hands[p], state.trick)
     assert card_id in la, "Mossa illegale: devi seguire il seme se puoi"
 
+    "Per sicurezza lavoriamo su un clone dello stato di gioco per non modificare l'originale"
     ns = state.clone() #Ns-> State -> Gamestate -> mano di un giocatore
-    ns.hands[p].remove(card_id)
-    ns.trick.plays.append((p, card_id))
+    ns.hands[p].remove(card_id) #Rimuoviamo dalla mano la carta giocata
+    ns.trick.plays.append((p, card_id)) #Tupla carte del trick aggiunta alla lista, giocatore + carta giocata
 
+    "Inizializza i punteggi"
     rewards = {0: 0, 1: 0}
     info = {}
 

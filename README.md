@@ -145,6 +145,6 @@ gym >= 0.26.0
 
 | | |
 |:--:|:--:|
-| <a href="https://github.com/BlackRaffo70"><img src="https://github.com/BlackRaffo70.png" width="110" alt="avatar Raffaele Neri"></a> | <a href="https://github.com/sebastianogiannitti"><img src="https://github.com/sebastianogiannitti" width="110" alt="avatar Sebastiano Giannitti"></a> |
+| <a href="https://github.com/BlackRaffo70"><img src="https://github.com/BlackRaffo70.png" width="110" alt="avatar Raffaele Neri"></a> | <a href="https://github.com/sebastianogiannitti"><img src="https://github.com/sebastianogiannitti.png" width="110" alt="avatar Sebastiano Giannitti"></a> |
 | **Raffaele Neri**<br/>[@BlackRaffo70](https://github.com/BlackRaffo70) | **Sebastiano Giannitti**<br/>[@sebastianogiannitti](https://github.com/sebastianogiannitti) |
 

@@ -8,7 +8,7 @@ La nostra **attività progettuale** per il corso di Fondamenti di Intelligenza A
 
 ## 🎯 Obiettivi
 
-- **Modellare** le regole e le dinamiche del gioco del Tresette. -> Essere in grado di giocare contro un'AI non allenata(random)
+- **Modellare** le regole e le dinamiche del gioco del Tresette. -> Essere in grado di giocare contro un'AI non allenata (random)
 - **Definire** un ambiente simulato in cui un agente AI possa giocare e migliorare.  -> Effettuare un training
 - **Addestrare** l’agente tramite algoritmi di *Deep Reinforcement Learning* (es. Deep Q-Learning), attraverso simulazioni di partite ed esplorazione contro AI che inizialmente gioca in random, poi utilizza un heuristica e in fine con una fase DQN pura
 - **Permettere** a un giocatore umano di sfidare l’AI.  
@@ -49,7 +49,7 @@ Durante il training:
 
  I parametri di training (es. numero di episodi, learning rate, epsilon decay, frequenza dei checkpoint) possono essere modificati direttamente nel file train_dqn.py.
  
- Abbiamo sfruttato le **infrastrutture HPC fornite da Università di Bologna (CS UNIBO)** per il training dell’agente, in particolare utilizzando una GPU NVIDIA L40 presente nella partizione “l40”. Questa configurazione ha permesso di accelerare significativamente l’addestramento del modello DQN garantendo tempi di calcolo adeguati e sfruttando al meglio il batch-processing parallelo.
+ Abbiamo sfruttato le **infrastrutture HPC fornite da Università di Bologna (CS UNIBO)** per il training dell’agente, in particolare utilizzando una GPU NVIDIA L40. Questa configurazione ha permesso di accelerare significativamente l’addestramento del modello DQN garantendo tempi di calcolo adeguati e sfruttando al meglio il batch-processing parallelo.
 
  ## 💾 Output del training
 

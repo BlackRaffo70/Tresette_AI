@@ -49,8 +49,10 @@ Per avviare il training:
 ```bash
 python train_dqn.py
 ```
-
+---
+```
 Abbiamo sfruttato le **infrastrutture HPC fornite da Università di Bologna (CS UNIBO) per il training dell’agente, in particolare utilizzando una GPU NVIDIA L40 presente nella partizione “l40”. Questa configurazione ha permesso di accelerare significativamente l’addestramento del modello DQN garantendo tempi di calcolo adeguati e sfruttando al meglio il batch-processing parallelo.
+```
 ---
 
 ## 🧩 Architettura generale

@@ -37,7 +37,7 @@ La nostra attività progettuale per il corso di Fondamenti di Intelligenza Artif
 Il processo di training dell’agente segue due fasi principali:  
 
 1. **Fase casuale** → l’agente gioca utilizzando mosse casuali, in modo da esplorare lo spazio delle possibilità e raccogliere esperienza.  
-2. **Fase euristica** → successivamente, viene introdotta una semplice euristica che guida le scelte dell’agente (es. preferire mosse con carte forti o evitare sprechi), accelerando l’apprendimento prima che intervenga l’ottimizzazione tramite **Deep Q-Learning**.  
+2. **Fase euristica** → successivamente, viene introdotta un euristica che guida le scelte dell’agente (es. preferire mosse con carte forti o evitare sprechi), accelerando l’apprendimento prima che intervenga l’ottimizzazione tramite **Deep Q-Learning**.  
 
 Durante il training:  
 - Vengono salvati **checkpoint periodici** del modello, per poter riprendere l’allenamento senza perdere i progressi.  
@@ -70,16 +70,16 @@ Il sistema è strutturato come un classico ambiente di **Reinforcement Learning*
 
 ```bash
 Tresette_AI/
-│── cards.py           # Rappresentazione e utilità per le carte
-│── rules.py           # Regole del Tresette e calcolo dei punteggi
-│── game4p.py          # Logica del gioco a 4 giocatori e gestione dei turni
-│── encoder.py         # Conversione dello stato in feature numeriche
-│── train_dqn.py       # Addestramento tramite algoritmo Deep Q-Learning
-│── menu_cli.py        # Interfaccia a riga di comando per giocare contro l’AI
-│── Watch_game.py      # Visualizzazione e replay delle partite
-│── obs/               # Moduli di osservazione e supporto
-│── tests/             # Test automatici e di integrazione
-└── README.md
+├─ cards.py                  # Carte e utilità
+├─ rules.py                  # Regole e punteggi
+├─ game4p.py                 # Logica del gioco a 4
+├─ obs/encoder.py            # Codifica dello stato per la rete
+├─ utils/HeuristicAgent.py   # Agente euristico
+├─ train_dqn.py              # Training DQN + checkpoint
+├─ watch_game.py             # Demo e tornei semplici
+├─ watch_game_parallel.py    # Tornei batched (veloci su GPU)
+├─ menu_cli.py               # Interfaccia testuale per giocare
+└─ README.md
 ```
 ---
 
@@ -88,20 +88,20 @@ Tresette_AI/
 Per installare ed eseguire il progetto:
 
 ```bash
-# 1. Clona la repository
-git clone https://github.com/tuo-username/Tresette_AI.git
+# 1) Clona la repo
+git clone https://github.com/BlackRaffo70/Tresette_AI.git
 cd Tresette_AI
 
-# 2. Crea e attiva un ambiente virtuale
-python -m venv .venv
-source .venv/bin/activate   # Mac/Linux
-.venv\Scripts\activate      # Windows
+# 2) Crea e attiva un ambiente virtuale
+python -m venv venv
+source venv/bin/activate        # Mac/Linux
+# .\venv\Scripts\activate       # Windows
 
-# 3. Installa le dipendenze
+# 3) Installa le dipendenze
 pip install -r requirements.txt
 
-# 4. (Opzionale) Verifica il supporto GPU con PyTorch
-python - <<EOF
+# 4) (opzionale) Verifica GPU in PyTorch
+python - << 'EOF'
 import torch
 print("CUDA disponibile:", torch.cuda.is_available())
 EOF
@@ -120,14 +120,21 @@ Oppure osservare partite simulate:
 ```bash
 python Watch_game.py
 ```
+Valutazione più rapida (batch, ideale su GPU)
+
+```bash
+python Watch_game_parallel.py
+```
+
 
 ## 📦 Requisiti
 
 Il progetto richiede **Python 3.10+** e le seguenti librerie principali:
 
 ```txt
-torch>=2.0.0
-numpy>=1.23.0
-matplotlib>=3.7.0
-tqdm>=4.65.0
-gym>=0.26.0
+Python >= 3.10
+torch >= 2.0.0
+numpy >= 1.23.0
+matplotlib >= 3.7.0
+tqdm >= 4.65.0
+gym >= 0.26.0

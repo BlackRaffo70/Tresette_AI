@@ -40,7 +40,7 @@ Il processo di training dell’agente segue due fasi principali:
 2. **Fase euristica** → successivamente, viene introdotta un euristica che guida le scelte dell’agente (es. preferire mosse con carte forti o evitare sprechi), accelerando l’apprendimento prima che intervenga l’ottimizzazione tramite **Deep Q-Learning**.  
 
 Durante il training:  
-- Vengono salvati **checkpoint periodici** del modello, per poter riprendere l’allenamento senza perdere i progressi.  
+- Possono essere salvati **checkpoint periodici** del modello, per poter riprendere l’allenamento senza perdere i progressi.  
 - Se disponibile, viene utilizzata la **GPU** tramite **PyTorch** per velocizzare il processo di apprendimento.  
 
  I parametri di training (es. numero di episodi, learning rate, epsilon decay, frequenza dei checkpoint) possono essere modificati direttamente nel file train_dqn.py.
@@ -49,6 +49,8 @@ Per avviare il training:
 ```bash
 python train_dqn.py
 ```
+
+Abbiamo sfruttato le **infrastrutture HPC fornite da Università di Bologna (CS UNIBO) per il training dell’agente, in particolare utilizzando una GPU NVIDIA L40 presente nella partizione “l40”. Questa configurazione ha permesso di accelerare significativamente l’addestramento del modello DQN garantendo tempi di calcolo adeguati e sfruttando al meglio il batch-processing parallelo.
 ---
 
 ## 🧩 Architettura generale

@@ -1,9 +1,8 @@
 <img width="896" height="208" alt="image" src="https://github.com/user-attachments/assets/8970c4f2-33d3-4192-9a33-d0c21f1ace12" />
 
 
-
-
-La nostra attività progettuale per il corso di Fondamenti di Intelligenza Artificiale si è basato sulla realizzazione di un sistema per la progettazione, l’allenamento e la valutazione di un’Intelligenza Artificiale capace di sfidare gli utenti al gioco di carte **Tresette**, tutto ciò applicando tecniche di **Reinforcement Learning (RL)** e simulazioni di partite.
+---
+La nostra **attività progettuale** per il corso di Fondamenti di Intelligenza Artificiale si è basato sulla realizzazione di un sistema per la progettazione, l’allenamento e la valutazione di un’Intelligenza Artificiale capace di sfidare gli utenti al gioco di carte **Tresette**, tutto ciò applicando tecniche di **Reinforcement Learning (RL)** e simulazioni di partite.
 
 ---
 
@@ -36,14 +35,11 @@ La nostra attività progettuale per il corso di Fondamenti di Intelligenza Artif
 
 ---
 ## 🏋️‍♂️ Training
-
-Il processo di training dell’agente segue 3 fasi principali:  
-
 Il processo di training dell’agente segue 3 fasi principali:  
 
 1. **Fase casuale (warm-up iniziale)** → l’agente gioca utilizzando mosse casuali o parzialmente guidate da regole semplici, così da esplorare lo spazio delle possibilità e riempire il replay buffer con le prime esperienze.  
 
-2. **Fase euristica (pre-training)** → in questa fase, l’agente segue esclusivamente la logica dell’euristica, che privilegia mosse più sensate (es. conservare gli assi, evitare di sprecare carte forti). Il DQN osserva queste partite e impara da esempi coerenti.  
+2. **Fase euristica (pre-training)** → in questa fase, l’agente segue esclusivamente la logica dell’euristica, che privilegia mosse più sensate e penalizza il contrario (es. conservare gli assi, evitare di sprecare carte forti). Il DQN osserva queste partite e impara da esempi coerenti.  
 
 3. **Fase DQN pura (sfruttamento)** → una volta terminato il pre-training, l’agente utilizza solo la rete neurale per scegliere le mosse, basandosi sui valori Q stimati. In questa fase non avviene più esplorazione casuale: l’AI gioca in modo deterministico, sfruttando al massimo la policy appresa.  
 
@@ -54,6 +50,15 @@ Durante il training:
  I parametri di training (es. numero di episodi, learning rate, epsilon decay, frequenza dei checkpoint) possono essere modificati direttamente nel file train_dqn.py.
  
  Abbiamo sfruttato le **infrastrutture HPC fornite da Università di Bologna (CS UNIBO)** per il training dell’agente, in particolare utilizzando una GPU NVIDIA L40 presente nella partizione “l40”. Questa configurazione ha permesso di accelerare significativamente l’addestramento del modello DQN garantendo tempi di calcolo adeguati e sfruttando al meglio il batch-processing parallelo.
+
+ ## 💾 Output del training
+
+Durante il processo di training, il sistema genera due tipologie di file principali:
+
+- **Checkpoint `.pt`** → contiene i pesi del modello neurale (rete DQN) e le informazioni necessarie per riprendere l’allenamento da uno stato salvato.  
+- **Replay Buffer `.pkl`** → memorizza le esperienze di gioco (stati, azioni, ricompense, transizioni) utilizzate per l’apprendimento.  
+
+Questi file vengono salvati periodicamente in modo automatico, permettendo di riprendere il training o di utilizzare il modello addestrato per la fase di valutazione o per sfidare l’AI.
 
 Per avviare il training:  
 ```bash

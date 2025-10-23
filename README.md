@@ -8,7 +8,8 @@ La nostra attività progettuale per il corso di Fondamenti di Intelligenza Artif
 
 - **Modellare** le regole e le dinamiche del gioco del Tresette. -> Essere in grado di giocare contro un'AI non allenata(random)
 - **Definire** un ambiente simulato in cui un agente AI possa giocare e migliorare.  -> Effettuare un training
-- **Addestrare** l’agente tramite algoritmi di *Deep Reinforcement Learning* (es. Deep Q-Learning).  
+- **Addestrare** l’agente tramite algoritmi di *Deep Reinforcement Learning* (es. Deep Q-Learning).
+- **Integrare** una componente **euristica** per migliorare l’apprendimento. 
 - **Permettere** a un giocatore umano di sfidare l’AI.  
 - **Confrontare** strategie casuali, euristiche e di apprendimento.  
 
@@ -50,26 +51,38 @@ python train_dqn.py
 ```
 ---
 
+## 🧩 Architettura generale
+
+Il sistema è strutturato come un classico ambiente di **Reinforcement Learning**:  
+
+| Componente | Descrizione |
+|-------------|-------------|
+| 🧠 Agente | Decide le mosse usando una `ε-greedy policy`. |
+| 🎮 Ambiente | Simula lo stato della partita (mani, prese, turno, carte giocate). |
+| 🪙 Reward shaping | Ricompense intermedie per prese utili e penalità per errori. |
+| 🧩 Rete neurale (DQN) | Stima i valori Q e apprende la policy ottimale. |
+| 🔁 Replay Buffer | Memorizza esperienze passate per stabilizzare l’apprendimento. |
+
+
+---
+
 ## 📂 Struttura del progetto
 
 ```bash
 Tresette_AI/
-│── .venv/              # Ambiente virtuale (non incluso nel repo)
-│
-│── obs/                # Moduli per osservazioni e rappresentazioni dello stato
-│   └── encoder.py      # Encoder per trasformare lo stato in input per l'AI
-│
-│── tests/              # Test automatici e unit test
-│
-│── cards.py            # Rappresentazione e utilità per le carte
-│── game4p.py           # Gestione del gioco a 4 giocatori
-│── menu_cli.py         # Interfaccia a riga di comando per giocare
-│── rules.py            # Regole del Tresette e funzioni di punteggio
-│── train_dqn.py        # Script di training con Deep Q-Learning
-│
-└── README.md           # Documentazione del progetto
+│── cards.py           # Rappresentazione e utilità per le carte
+│── rules.py           # Regole del Tresette e calcolo dei punteggi
+│── game4p.py          # Logica del gioco a 4 giocatori e gestione dei turni
+│── encoder.py         # Conversione dello stato in feature numeriche
+│── train_dqn.py       # Addestramento tramite algoritmo Deep Q-Learning
+│── menu_cli.py        # Interfaccia a riga di comando per giocare contro l’AI
+│── Watch_game.py      # Visualizzazione e replay delle partite
+│── obs/               # Moduli di osservazione e supporto
+│── tests/             # Test automatici e di integrazione
+└── README.md
 ```
 ---
+
 ## 🚀 Installazione
 
 Per installare ed eseguire il progetto:
@@ -101,6 +114,13 @@ Dopo aver completato il training, è possibile sfidare l’agente tramite l’in
 ```bash
 python menu_cli.py
 ```
+
+Oppure osservare partite simulate:
+
+```bash
+python Watch_game.py
+```
+
 ## 📦 Requisiti
 
 Il progetto richiede **Python 3.10+** e le seguenti librerie principali:

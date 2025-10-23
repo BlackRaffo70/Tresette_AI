@@ -138,3 +138,13 @@ numpy >= 1.23.0
 matplotlib >= 3.7.0
 tqdm >= 4.65.0
 gym >= 0.26.0
+
+---
+
+# 👥 Autori
+
+| | | |
+|:--:|:--:|:--:|
+| <a href="https://github.com/BlackRaffo70"><img src="https://github.com/BlackRaffo70.png" width="110" alt="avatar Raffaele Neri"></a> | <a href="https://github.com/USERNAME_2"><img src="https://github.com/BlackRaffo70.png" width="110" alt="avatar Nome Cognome 2"></a> | <a href="https://github.com/USERNAME_3"><img src="https://github.com/USERNAME_3.png" width="110" alt="avatar Nome Cognome 3"></a> |
+| **Raffaele Neri**<br/>[@BlackRaffo70](https://github.com/BlackRaffo70) | **Nome Cognome**<br/>[@USERNAME_2](https://github.com/USERNAME_2) | **Nome Cognome**<br/>[@USERNAME_3](https://github.com/USERNAME_3) |
+

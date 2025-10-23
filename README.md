@@ -1,4 +1,5 @@
-<img width="879" height="208" alt="image" src="https://github.com/user-attachments/assets/a9b38a66-9629-4b6a-ada4-94cdcd80d8e3" />
+<img width="896" height="208" alt="image" src="https://github.com/user-attachments/assets/9813a78e-817d-431a-bda5-74c0877518cc" />
+
 
 
 La nostra attività progettuale per il corso di Fondamenti di Intelligenza Artificiale si è basato sulla realizzazione di un sistema per la progettazione, l’allenamento e la valutazione di un’Intelligenza Artificiale capace di sfidare gli utenti al gioco di carte **Tresette**, tutto ciò applicando tecniche di **Reinforcement Learning (RL)** e simulazioni di partite.

@@ -8,8 +8,7 @@ La nostra attività progettuale per il corso di Fondamenti di Intelligenza Artif
 
 - **Modellare** le regole e le dinamiche del gioco del Tresette. -> Essere in grado di giocare contro un'AI non allenata(random)
 - **Definire** un ambiente simulato in cui un agente AI possa giocare e migliorare.  -> Effettuare un training
-- **Addestrare** l’agente tramite algoritmi di *Deep Reinforcement Learning* (es. Deep Q-Learning).
-- **Integrare** una componente **euristica** per migliorare l’apprendimento. 
+- **Addestrare** l’agente tramite algoritmi di *Deep Reinforcement Learning* (es. Deep Q-Learning), attraverso simulazioni di partite ed esplorazione contro AI che inizialmente gioca in random, poi utilizza un heuristica e in fine con una fase DQN pura
 - **Permettere** a un giocatore umano di sfidare l’AI.  
 - **Confrontare** strategie casuali, euristiche e di apprendimento.  
 
@@ -26,18 +25,24 @@ La nostra attività progettuale per il corso di Fondamenti di Intelligenza Artif
 
 ## 🧠 Architettura AI
 
-- **Ambiente** → rappresenta lo stato della partita (mani, prese, turno, carte giocate).  
-- **Agente** → apprende a selezionare le mosse tramite `ε-greedy policy`.  
-- **Reward shaping** → ricompense intermedie per prese utili e penalità per errori.  
-- **Training loop** → simulazione di migliaia di partite per ottimizzare la policy.  
+- **Ambiente** → rappresenta lo stato completo della partita (mani, prese, turno, carte giocate e segnali).  
+- **Agente** → apprende a selezionare la mossa ottimale attraverso una `ε-greedy policy`, bilanciando esplorazione e sfruttamento.  
+- **Rete DQN** → stima i valori Q delle azioni possibili e aggiorna i pesi della rete tramite backpropagation.  
+- **Reward shaping** → fornisce ricompense dense per incoraggiare prese vantaggiose e penalizzare mosse deboli o errori strategici.  
+- **Training loop** → simula migliaia di partite, aggiornando la policy e salvando checkpoint periodici per monitorare l’evoluzione dell’agente.   
 
 ---
 ## 🏋️‍♂️ Training
 
-Il processo di training dell’agente segue due fasi principali:  
+Il processo di training dell’agente segue 3 fasi principali:  
 
-1. **Fase casuale** → l’agente gioca utilizzando mosse casuali, in modo da esplorare lo spazio delle possibilità e raccogliere esperienza.  
-2. **Fase euristica** → successivamente, viene introdotta un euristica che guida le scelte dell’agente (es. preferire mosse con carte forti o evitare sprechi), accelerando l’apprendimento prima che intervenga l’ottimizzazione tramite **Deep Q-Learning**.  
+Il processo di training dell’agente segue 3 fasi principali:  
+
+1. **Fase casuale (warm-up iniziale)** → l’agente gioca utilizzando mosse casuali o parzialmente guidate da regole semplici, così da esplorare lo spazio delle possibilità e riempire il replay buffer con le prime esperienze.  
+
+2. **Fase euristica (pre-training)** → in questa fase, l’agente segue esclusivamente la logica dell’euristica, che privilegia mosse più sensate (es. conservare gli assi, evitare di sprecare carte forti). Il DQN osserva queste partite e impara da esempi coerenti.  
+
+3. **Fase DQN pura (sfruttamento)** → una volta terminato il pre-training, l’agente utilizza solo la rete neurale per scegliere le mosse, basandosi sui valori Q stimati. In questa fase non avviene più esplorazione casuale: l’AI gioca in modo deterministico, sfruttando al massimo la policy appresa.  
 
 Durante il training:  
 - Possono essere salvati **checkpoint periodici** del modello, per poter riprendere l’allenamento senza perdere i progressi.  
@@ -45,7 +50,7 @@ Durante il training:
 
  I parametri di training (es. numero di episodi, learning rate, epsilon decay, frequenza dei checkpoint) possono essere modificati direttamente nel file train_dqn.py.
  
- Abbiamo sfruttato le **infrastrutture HPC fornite da Università di Bologna (CS UNIBO) per il training dell’agente, in particolare utilizzando una GPU NVIDIA L40 presente nella partizione “l40”. Questa configurazione ha permesso di accelerare significativamente l’addestramento del modello DQN garantendo tempi di calcolo adeguati e sfruttando al meglio il batch-processing parallelo.
+ Abbiamo sfruttato le **infrastrutture HPC fornite da Università di Bologna (CS UNIBO)** per il training dell’agente, in particolare utilizzando una GPU NVIDIA L40 presente nella partizione “l40”. Questa configurazione ha permesso di accelerare significativamente l’addestramento del modello DQN garantendo tempi di calcolo adeguati e sfruttando al meglio il batch-processing parallelo.
 
 Per avviare il training:  
 ```bash
@@ -59,11 +64,14 @@ Il sistema è strutturato come un classico ambiente di **Reinforcement Learning*
 
 | Componente | Descrizione |
 |-------------|-------------|
-| 🧠 Agente | Decide le mosse usando una `ε-greedy policy`. |
-| 🎮 Ambiente | Simula lo stato della partita (mani, prese, turno, carte giocate). |
-| 🪙 Reward shaping | Ricompense intermedie per prese utili e penalità per errori. |
-| 🧩 Rete neurale (DQN) | Stima i valori Q e apprende la policy ottimale. |
-| 🔁 Replay Buffer | Memorizza esperienze passate per stabilizzare l’apprendimento. |
+| 🧠 Agente | Decide le mosse in base ai valori Q stimati dalla rete neurale. |
+| 🎮 Ambiente | Simula lo stato del gioco, gestendo mani, prese, punteggi e regole del Tresette. |
+| 🪙 Reward shaping | Introduce ricompense intermedie per incoraggiare comportamenti utili (es. vincere prese, evitare errori). |
+| 🧩 Rete neurale (DQN) | Predice i Q-values per ogni azione possibile e aggiorna i pesi durante il training. |
+| 🔁 Replay Buffer | Memorizza le esperienze (stato, azione, ricompensa, stato successivo) per stabilizzare l’apprendimento. |
+| 🧮 Target Network | Copia periodicamente i pesi della rete principale per evitare oscillazioni e migliorare la convergenza. |
+| ⚙️ Epsilon Decay | Riduce gradualmente la casualità nelle scelte, passando da esplorazione a sfruttamento. |
+| 🧑‍🏫 Agente Euristico | Fornisce esempi iniziali sensati per accelerare l’apprendimento dell’agente DQN. |
 
 
 ---
@@ -72,16 +80,18 @@ Il sistema è strutturato come un classico ambiente di **Reinforcement Learning*
 
 ```bash
 Tresette_AI/
-├─ cards.py                  # Carte e utilità
-├─ rules.py                  # Regole e punteggi
-├─ game4p.py                 # Logica del gioco a 4
-├─ obs/encoder.py            # Codifica dello stato per la rete
-├─ utils/HeuristicAgent.py   # Agente euristico
-├─ train_dqn.py              # Training DQN + checkpoint
-├─ watch_game.py             # Demo e tornei semplici
-├─ watch_game_parallel.py    # Tornei batched (veloci su GPU)
-├─ menu_cli.py               # Interfaccia testuale per giocare
-└─ README.md
+├─ cards.py                  # Definizione e utilità per le carte
+├─ rules.py                  # Regole del Tresette e calcolo dei punteggi
+├─ game4p.py                 # Logica del gioco a 4 giocatori e gestione dei turni
+├─ obs/encoder.py            # Codifica dello stato di gioco in feature numeriche
+├─ utils/HeuristicAgent.py   # Agente basato su regole euristiche
+├─ train_dqn.py              # Training DQN, gestione checkpoint e salvataggi
+├─ watch_game.py             # Simulazione e visualizzazione di partite singole
+├─ watch_game_parallel.py    # Esecuzione di tornei paralleli (batch GPU)
+├─ menu_cli.py               # Interfaccia a riga di comando per giocare contro l’AI
+├─ train_long.sbatch         # Script per esecuzione su cluster HPC (GPU L40 nel nostro caso)
+├─ requirements.txt          # Dipendenze del progetto
+└─ README.md                 # Documentazione principale
 ```
 ---
 
